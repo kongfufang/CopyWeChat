@@ -4,7 +4,13 @@ const Isempty = (obj) => {
   }
   return false
 }
-
+const getAreaInfo = (area) => {
+  if (Isempty(area)) {
+    return '-'
+  }
+  return area.replace(',', ' ')
+}
 export default {
-  Isempty
+  Isempty,
+  getAreaInfo
 }

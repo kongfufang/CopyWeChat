@@ -1,8 +1,8 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, Tray, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { ipcMain } from 'electron'
+import { onLoginorRegister, onOpenChat, onWinTitleOp } from './ipc'
 const NODE_ENV = process.env.NODE_ENV
 const login_width = 300
 const login_height = 370
@@ -26,23 +26,13 @@ function createWindow() {
       contextIsolation: false //关闭隔离后才能实现渲染进程与主进程通信
     }
   })
-  // 监听渲染进程发送的消息,与渲染进程通信
-  ipcMain.on('LoginorRegister', (e, IsLogin) => {
-    // console.log('收到渲染进程:', IsLogin)
-    mainWindow.setResizable(true)
-    if (IsLogin) {
-      mainWindow.setSize(login_width, login_height)
-    } else {
-      mainWindow.setSize(login_width, rejister_height)
-    }
-    mainWindow.setResizable(false)
-  })
   //开去控制台
   if (NODE_ENV === 'development') {
     mainWindow.webContents.openDevTools()
   }
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
+    mainWindow.setTitle('CopyWeChat')
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -57,6 +47,87 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+  //托盘区域
+  const tray = new Tray(icon)
+  //定义右键菜单
+  const contextMenu = [
+    {
+      label: '退出CopyWeChat',
+      click: () => {
+        app.exit()
+      }
+    }
+  ]
+  //创建菜单
+  const menu = Menu.buildFromTemplate(contextMenu)
+  //设置托盘图标的提示信息
+  tray.setToolTip('CopyWeChat')
+  //设置托盘图标的上下文菜单
+  tray.setContextMenu(menu)
+  //处理托盘图标的点击事件：
+  tray.on('click', () => {
+    //使主窗口可以在任务栏中显示。
+    mainWindow.setSkipTaskbar(false)
+    mainWindow.show()
+  })
+
+  //切换登录注册窗口
+  onLoginorRegister((IsLogin) => {
+    mainWindow.setResizable(true)
+    if (IsLogin) {
+      mainWindow.setSize(login_width, login_height)
+    } else {
+      mainWindow.setSize(login_width, rejister_height)
+    }
+    mainWindow.setResizable(false)
+  })
+  //打开聊天窗口
+  onOpenChat((config) => {
+    mainWindow.setResizable(true)
+    mainWindow.setSize(850, 800)
+    mainWindow.center()
+    mainWindow.setMaximizable(true)
+    mainWindow.setMinimumSize(800, 600)
+
+    //设置托盘
+    contextMenu.unshift({
+      label: '用户：' + config.nickName,
+      click: () => {}
+    })
+    tray.setContextMenu(Menu.buildFromTemplate(contextMenu))
+  })
+  //窗口右上角的几个操作
+  onWinTitleOp((e, { action, data }) => {
+    const webContents = e.sender
+    const win = BrowserWindow.fromWebContents(webContents) //获取当前的窗口
+    switch (action) {
+      case 'close': {
+        if (data.closeType === 0) {
+          win.close()
+        } else {
+          win.setSkipTaskbar(true) //它的作用是让指定的窗口在任务栏中不显示。
+          win.hide()
+        }
+        break
+      }
+      case 'minimize': {
+        win.minimize()
+        break
+      }
+      case 'maximize': {
+        win.maximize()
+        break
+      }
+      case 'unmaximize': {
+        win.unmaximize()
+        break
+      }
+      case 'top': {
+        win.setAlwaysOnTop(data.top)
+        break
+      }
+    }
+  })
 }
 
 // This method will be called when Electron has finished

@@ -1,19 +1,34 @@
 <template>
   <div class="login-panel">
     <div class="title drag">Wechat</div>
-    <div class="login-form">
+    <div v-if="showLoading" class="loding-panel">
+      <img src="../assets/img/loading.gif" alt="" />
+    </div>
+    <div v-else class="login-form">
       <div class="error-msg">{{ errorMsg }}</div>
       <el-form ref="formDataRef" :model="formData" label-width="0px" @submit.prevent>
         <!--input输入-->
         <el-form-item prop="email">
-          <el-input v-model.trim="formData.email" clearable placeholder="请输入邮箱地址">
+          <el-input
+            v-model.trim="formData.email"
+            clearable
+            placeholder="请输入邮箱地址"
+            max-length="30"
+            @focus="clearInput"
+          >
             <template #prefix>
               <span class="iconfont icon-email"></span>
             </template>
           </el-input>
         </el-form-item>
         <el-form-item v-if="!IsLogin" prop="nickName">
-          <el-input v-model.trim="formData.nickName" clearable placeholder="请输入昵称">
+          <el-input
+            v-model.trim="formData.nickName"
+            clearable
+            placeholder="请输入昵称"
+            max-length="15"
+            @focus="clearInput"
+          >
             <template #prefix>
               <span class="iconfont icon-user-nick"></span>
             </template>
@@ -25,6 +40,7 @@
             clearable
             placeholder="请输入密码"
             show-password
+            @focus="clearInput"
           >
             <template #prefix>
               <span class="iconfont icon-password"></span>
@@ -32,18 +48,37 @@
           </el-input>
         </el-form-item>
         <el-form-item v-if="!IsLogin" prop="rePassword">
-          <el-input v-model.trim="formData.rePassword" clearable placeholder="请再次输入密码">
+          <el-input
+            v-model.trim="formData.rePassword"
+            clearable
+            placeholder="请再次输入密码"
+            @focus="clearInput"
+          >
             <template #prefix>
               <span class="iconfont icon-password"></span>
             </template>
           </el-input>
         </el-form-item>
         <el-form-item prop="checkcode">
-          <el-input v-model.trim="formData.checkcode" clearable placeholder="请输入验证码">
-            <template #prefix>
-              <span class="iconfont icon-checkcode"></span>
-            </template>
-          </el-input>
+          <div class="check-code-panel">
+            <el-input
+              v-model.trim="formData.checkcode"
+              clearable
+              placeholder="请输入验证码"
+              @focus="clearInput"
+            >
+              <template #prefix>
+                <span class="iconfont icon-checkcode"></span>
+              </template>
+            </el-input>
+            <img
+              :src="checkcodeUrl"
+              alt="验证码"
+              style="cursor: pointer; width: 100%"
+              class="checkcode"
+              @click="changeCheckcode"
+            />
+          </div>
         </el-form-item>
 
         <el-form-item>
@@ -56,39 +91,128 @@
         <span class="a-link" @click="changeOpType">{{ IsLogin ? '没有账号?' : '已有账号?' }}</span>
       </div>
     </div>
+    <WinOp :show-set-top="false" :show-min="false" :show-max="false" :close-type="0"></WinOp>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, getCurrentInstance, nextTick } from 'vue'
+import { ref, getCurrentInstance, nextTick } from 'vue'
+import md5 from 'js-md5'
+import { useUserInfoStore } from '@/store/userInfoStore.js'
+import { useRouter } from 'vue-router'
+import WinOp from '../components/WinOp.vue'
+const router = useRouter()
 const { proxy } = getCurrentInstance()
 const formData = ref({})
 const formDataRef = ref()
-
+const userInfoStore = useUserInfoStore()
 const IsLogin = ref(true)
 // 切换登录注册
 const changeOpType = () => {
   window.ipcRenderer.send('LoginorRegister', !IsLogin.value)
   IsLogin.value = !IsLogin.value
+  //nextTick用于在下一个 DOM 更新循环结束之后执行延迟回调.在 Vue 中，数据的更改（例如 IsLogin.value = !IsLogin.value）不会立即反映到 DOM 中，而是会在下一个事件循环中批量更新。这意味着如果您在数据更改后立即尝试操作依赖于最新 DOM 状态的元素，可能会遇到问题，因为 DOM 还未更新。
+  nextTick(() => {
+    formDataRef.value.resetFields() //resetFields 通常是表单组件（例如，Element Plus 的 el-form 组件）提供的方法，用于重置表单的所有字段到其初始状态。
+    formData.value = {}
+    errorMsg.value = null
+  })
+  changeCheckcode()
 }
+//验证码刷新模块
+const checkcodeUrl = ref(null)
+const changeCheckcode = async () => {
+  let result = await proxy.Request({
+    url: proxy.api.checkCode
+  })
+  if (!result) {
+    return
+  }
+  // console.log(result)
+
+  checkcodeUrl.value = result.checkCode
+
+  localStorage.setItem('checkcodeKey', result.checkCodeKey)
+}
+changeCheckcode()
 const errorMsg = ref(null)
 //提交行为
-const submit = () => {
-  //校验表单
+const showLoading = ref(false)
+const submit = async () => {
+  //校验表单,校验表单思路：第一步在点击提交按钮时进行从上到下依次校验,校验函数传入类型，表单值和错误提示，在校验函数中首先判断空操作，，其中空操作挂在全局上
+  //通过校验错误，将错误信息挂在上方盒子里，然后通过第二层正则校验，正则校验挂在全局上，传入校验类型和值，如果校验不通过，将错误信息挂在上方盒子里。
   clearInput()
-  if (!checkValue('checkEmail', formData.value.email, '请输入邮箱地址')) {
+  if (!checkValue('checkEmail', formData.value.email, '请输入正确的邮箱地址')) {
+    return
+  }
+  if (!IsLogin.value && !checkValue(null, formData.value.nickName, '请输入昵称')) {
     return
   }
   if (!checkValue('checkPassword', formData.value.password, '请输入8-18位字母数字组合密码')) {
     return
   }
+  if (!IsLogin.value && formData.value.password !== formData.value.rePassword) {
+    errorMsg.value = '两次密码不一致'
+    return
+  }
   if (!checkValue(null, formData.value.checkcode, '请输入验证码')) {
     return
+  }
+  if (IsLogin.value) {
+    showLoading.value = true
+  }
+  await nextTick()
+  let result = await proxy.Request({
+    url: IsLogin.value ? proxy.api.login : proxy.api.register,
+    showLoading: IsLogin.value ? false : true,
+    showError: false,
+    params: {
+      email: formData.value.email,
+      password: IsLogin.value ? md5(formData.value.password) : formData.value.password,
+      checkCode: formData.value.checkcode,
+      nickName: formData.value.nickName,
+      checkCodeKey: localStorage.getItem('checkcodeKey')
+    },
+    errorCallback: (responce) => {
+      showLoading.value = false
+      errorMsg.value = responce.info
+      changeCheckcode()
+    }
+  })
+
+  if (!result) {
+    return
+  }
+  //此时的result是没有data的
+  if (IsLogin.value) {
+    // console.log(result)
+    userInfoStore.setUserInfo(result)
+    localStorage.setItem('token', result.token)
+
+    const widowWidth = window.screen.width
+    const widowHeight = window.screen.height
+    router.push('/main')
+    window.ipcRenderer.send('openChat', {
+      email: formData.value.email,
+      token: result.token,
+      userId: result.userId,
+      nickName: result.nickName,
+      admin: result.admin,
+      widowWidth,
+      widowHeight
+    })
+  } else {
+    changeOpType()
+    proxy.message.success('注册成功')
   }
 }
 //校验密码是否正确
 const checkValue = (type, value, msg) => {
   if (proxy.Utils.Isempty(value)) {
+    errorMsg.value = msg
+    return false
+  }
+  if (type && !proxy.Verify[type](value)) {
     errorMsg.value = msg
     return false
   }
@@ -144,5 +268,13 @@ const clearInput = () => {
   line-height: 30px;
   height: 30px;
   color: #fb7373;
+}
+.check-code-panel {
+  display: flex;
+  .checkcode {
+    margin-left: 5px;
+    width: 120px;
+    cursor: pointer;
+  }
 }
 </style>

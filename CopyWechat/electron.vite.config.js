@@ -3,6 +3,7 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
+  logLevel: 'error',
   main: {
     plugins: [externalizeDepsPlugin()]
   },
@@ -15,6 +16,18 @@ export default defineConfig({
         '@': resolve('src/renderer/src')
       }
     },
-    plugins: [vue()]
+    plugins: [vue()],
+    server: {
+      hmr: true,
+      port: 5000,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:5050',
+          changeOrigin: true, // needed for virtual hosted sites
+          pathRewrite: { '^/api': '/api' },
+          secure: false
+        }
+      }
+    }
   }
 })

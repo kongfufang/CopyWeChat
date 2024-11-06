@@ -8,7 +8,7 @@
       :width="width"
       :file-id="userId"
       :force-get="true"
-      :file-type="'avatar'"
+      :file-type="0"
     ></ShowLocalImage>
   </div>
 </template>

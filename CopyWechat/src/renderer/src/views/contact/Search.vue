@@ -28,6 +28,7 @@
             searchResult.status == '4'
           "
           type="primary"
+          @click="applyContact"
           >{{ searchResult.contactType == 'USER' ? '添加联系人' : '申请加入群聊' }}</el-button
         >
         <el-button v-if="searchResult.status == '1'" type="primary">发消息</el-button>
@@ -36,6 +37,7 @@
     </div>
     <div v-if="!searchResult" class="no-data">没有搜索到联系人</div>
   </ContentPanel>
+  <SearchAdd ref="searchAddRef" @reload="resetForm"></SearchAdd>
 </template>
 
 <script setup>
@@ -43,6 +45,7 @@ import { ref, getCurrentInstance, computed } from 'vue'
 import ContentPanel from '../../components/ContentPanel.vue'
 import { useUserInfoStore } from '@/store/userInfoStore.js'
 import UserBaseInfo from '../../components/UserBaseInfo.vue'
+import SearchAdd from './SearchAdd.vue'
 const userInfoStore = useUserInfoStore()
 
 const contactId = ref('')
@@ -78,6 +81,16 @@ const contactTypeName = computed(() => {
   }
   return '没有搜索到人'
 })
+//添加联系人的气泡框
+const searchAddRef = ref()
+const applyContact = () => {
+  searchAddRef.value.show(searchResult.value)
+}
+//搜索后表单制空
+const resetForm = () => {
+  searchResult.value = {}
+  contactId.value = ''
+}
 </script>
 
 <style lang="scss" scoped>

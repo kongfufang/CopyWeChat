@@ -24,7 +24,18 @@
               <div :class="['iconfont', sub.icon]" :style="{ background: sub.iconBgColor }"></div>
               <div class="test">{{ sub.name }}</div>
             </div>
-            <template v-for="contact in item.contactData" :key="contact"></template>
+            <template v-for="contact in item.contactData" :key="contact.contactId">
+              <div
+                :class="[
+                  'part-item',
+                  contact[item.contactId] == route.query.contactId ? 'active' : ''
+                ]"
+                @click="contactDetail(contact, item)"
+              >
+                <Avatar :user-id="contact[item.contactId]" :width="35"></Avatar>
+                <div class="test">{{ contact[item.contactName] }}</div>
+              </div>
+            </template>
             <template v-if="item.contactData && item.contactData.length == 0">
               <div class="no-data">
                 {{ item.emptyMsg }}
@@ -45,10 +56,14 @@
 
 <script setup>
 import Layout from '../../components/Layout.vue'
-import { ref } from 'vue'
+import { ref, getCurrentInstance, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import WinOp from '../../components/WinOp.vue'
 import router from '../../router'
+import Avatar from '../../components/Avatar.vue'
+import { useContactStateStore } from '../../store/contactStateStore'
+const contactStateStore = useContactStateStore()
+const { proxy } = getCurrentInstance()
 const route = useRoute()
 const partList = ref([
   {
@@ -116,6 +131,49 @@ const partJump = (item) => {
   }
   router.push(item.path)
 }
+//加载已有联系人
+const loadContact = async (contactType) => {
+  let result = await proxy.Request({
+    url: proxy.api.loadContact,
+    params: {
+      contactType
+    }
+  })
+  if (!result) {
+    return
+  }
+  if (contactType == 'GROUP') {
+    partList.value[2].contactData = result
+  } else if (contactType == 'USER') {
+    partList.value[3].contactData = result
+  }
+}
+loadContact('GROUP')
+loadContact('USER')
+const contactDetail = (contact, item) => {}
+//主页面所有联系人搜索
+const searchKey = ref('')
+const search = () => {}
+
+//实时监听是否有新的好友或群组加入
+watch(
+  () => contactStateStore.contactReload,
+  (newVal) => {
+    if (!newVal) {
+      return
+    }
+    switch (newVal) {
+      case 'USER':
+      case 'GROUP':
+        loadContact(newVal)
+        break
+    }
+  },
+  {
+    immediate: true,
+    deep: true
+  }
+)
 </script>
 
 <style lang="scss" scoped>

@@ -17,6 +17,7 @@ import Layout from './components/Layout.vue'
 import WinOp from './components/WinOp.vue'
 import ShowLocalImage from './components/ShowLocalImage.vue'
 import UserBaseInfo from './components/UserBaseInfo.vue'
+import Dailog from './components/Dailog.vue'
 const app = createApp(App)
 app.config.globalProperties.Utils = Utils
 app.config.globalProperties.Verify = Verify
@@ -28,6 +29,7 @@ app.component('WinOp', WinOp)
 app.component('Layout', Layout)
 app.component('ContentPanel', ContentPanel)
 app.component('UserBaseInfo', UserBaseInfo)
+app.component('Dailog', Dailog)
 app.use(Pinia.createPinia())
 app.use(ElementPlus)
 app.use(router)

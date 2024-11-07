@@ -66,7 +66,7 @@ const submitApply = async () => {
   })
   if (result == 0) {
     proxy.message.success('添加成功')
-  } else if (result == 1) {
+  } else {
     proxy.message.success('申请成功，请等待审核')
   }
 

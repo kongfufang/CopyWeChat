@@ -150,7 +150,30 @@ const loadContact = async (contactType) => {
 }
 loadContact('GROUP')
 loadContact('USER')
-const contactDetail = (contact, item) => {}
+//加载现有我创建的群聊
+const loadMyGroup = async () => {
+  let result = await proxy.Request({
+    url: proxy.api.loadMyGroup,
+    showLoading: false
+  })
+  if (!result) {
+    return
+  }
+  partList.value[1].contactData = result
+}
+loadMyGroup()
+//跳转到联系人详情页(右边模块)
+const contactDetail = (contact, part) => {
+  if (part.showTitle) {
+    rightTitle.value = contact[part.contactName]
+  }
+  router.push({
+    path: part.contactPath,
+    query: {
+      contactId: contact[part.contactId]
+    }
+  })
+}
 //主页面所有联系人搜索
 const searchKey = ref('')
 const search = () => {}
@@ -163,9 +186,27 @@ watch(
       return
     }
     switch (newVal) {
+      case 'MY':
+        loadMyGroup()
+        break
       case 'USER':
       case 'GROUP':
         loadContact(newVal)
+        break
+      case 'DISSOLUTION_GROUP':
+        loadMyGroup()
+        router.push('/contact/blank')
+        rightTitle.value = null
+        break
+      case 'LEAVE_GROUP':
+        loadContact('GROUP')
+        router.push('/contact/blank')
+        rightTitle.value = null
+        break
+      case 'REMOVE_USER':
+        loadContact('USER')
+        router.push('/contact/blank')
+        rightTitle.value = null
         break
     }
   },

@@ -14,7 +14,7 @@
         <AvatarUpload
           ref="avatarUploadRef"
           v-model="formData.avatarFile"
-          @cover-file="savaCover"
+          @cover-file="saveCover"
         ></AvatarUpload>
       </el-form-item>
       <el-form-item label="加入权限" prop="joinType">
@@ -49,16 +49,21 @@
 <script setup>
 import { ref } from 'vue'
 import { getCurrentInstance } from 'vue'
+import { useContactStateStore } from '../../store/contactStateStore'
+import AvatarUpload from '../../components/AvatarUpload.vue'
+
+const contactStateStore = useContactStateStore()
 const { proxy } = getCurrentInstance()
 const formDataRef = ref()
 const formData = ref({})
 //创建/修改群聊时的表单验证规则
 const rules = ref({
   groupName: [{ required: true, message: '请输入群名称', trigger: 'blur' }],
-  joinType: [{ required: true, message: '请选择加入权限', trigger: 'blur' }],
-  avatarFile: [{ required: true, message: '请上传封面', trigger: 'blur' }]
+  joinType: [{ required: true, message: '请选择加入权限', trigger: 'blur' }]
+  // avatarFile: [{ required: true, message: '请上传封面', trigger: 'blur' }]
 })
 //提交创建/修改群聊时的处理
+const emits = defineEmits(['editBack'])
 const submit = async () => {
   formDataRef.value.validate(async (valid) => {
     if (!valid) return
@@ -73,9 +78,25 @@ const submit = async () => {
     }
     if (params.groupId) {
       proxy.message.success('群组修改成功')
+      emits('editBack')
+    } else {
+      proxy.message.success('群组创建成功')
     }
+    formDataRef.value.resetFields()
+    contactStateStore.setContactReload('My')
   })
 }
+//保存封面
+const saveCover = (file) => {}
+const show = (data) => {
+  formDataRef.value.resetFields()
+  formData.value = Object.assign({}, data)
+  formData.value.avatarFile = data.groupId
+}
+
+defineExpose({
+  show
+})
 </script>
 
 <style lang="scss" scoped></style>

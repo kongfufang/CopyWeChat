@@ -40,6 +40,21 @@ const router = createRouter({
               path: '/contact/createGroup',
               name: '新建群聊',
               component: () => import('@/views/contact/GroupEdit.vue')
+            },
+            {
+              path: '/contact/userDetail',
+              name: '用户详情',
+              component: () => import('@/views/contact/UserDetail.vue')
+            },
+            {
+              path: '/contact/groupDetail',
+              name: '群组详情',
+              component: () => import('@/views/contact/GroupDetail.vue')
+            },
+            {
+              path: '/contact/contactNotice',
+              name: '好友申请通知',
+              component: () => import('@/views/contact/ContactApply.vue')
             }
           ]
         },

@@ -25,13 +25,57 @@
 
 <script setup>
 import Layout from '../../components/Layout.vue'
-import { ref, getCurrentInstance } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+const router = useRouter()
+const route = useRoute()
 const settingMenuList = ref([
   { name: '账号设置', icon: 'icon-user-setting', path: '/setting/userInfo', bgColor: '#0294f5' },
   { name: '文件管理', icon: 'icon-folder1', path: '/setting/fileManage', bgColor: '#ffd04f' },
   { name: '关于我们', icon: 'icon-about', path: '/setting/about', bgColor: '#08bf61' }
 ])
+const Jump = (item) => {
+  router.push(item.path)
+}
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.title-panel {
+  height: 60px;
+  line-height: 60px;
+  text-align: center;
+  background: #f7f7f7;
+}
+.menu-list {
+  border-top: 1px solid #ddd;
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    &:hover {
+      background: #d6d6d7;
+      cursor: pointer;
+    }
+    .iconfont {
+      font-size: 20px;
+      width: 35px;
+      height: 35px;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .menu-name {
+      color: #000000;
+      margin-left: 10px;
+      flex: 1;
+    }
+  }
+  .menu-active {
+    background: #c4c4c4;
+    &:hover {
+      background: #c4c4c4;
+    }
+  }
+}
+</style>

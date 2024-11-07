@@ -2,7 +2,13 @@ import { app, shell, BrowserWindow, Tray, Menu } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { onLoginorRegister, onOpenChat, onWinTitleOp } from './ipc'
+import {
+  onLoginorRegister,
+  onOpenChat,
+  onWinTitleOp,
+  ongetLocalStore,
+  onsetLocalStore
+} from './ipc'
 const NODE_ENV = process.env.NODE_ENV
 const login_width = 300
 const login_height = 370
@@ -128,6 +134,10 @@ function createWindow() {
       }
     }
   })
+  //设置本地存储
+  onsetLocalStore()
+  //获取本地存储
+  ongetLocalStore()
 }
 
 // This method will be called when Electron has finished

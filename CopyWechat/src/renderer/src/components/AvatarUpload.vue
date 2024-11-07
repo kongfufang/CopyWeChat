@@ -37,6 +37,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import ShowLocalImage from './ShowLocalImage.vue'
 
 const props = defineProps({
@@ -44,6 +45,10 @@ const props = defineProps({
     type: [String, Object],
     default: null
   }
+})
+//头像预览功能
+const preview = computed(() => {
+  return props.modelValue instanceof File
 })
 </script>
 

@@ -18,6 +18,9 @@ const api = {
   getGroupInfo: '/group/getGroupInfo', // 获取某个群组详细信息
   dissolutionGroup: '/group/dissolutionGroup', // 解散群组
   addContact2BlackList: '/contact/addContact2BlackList', // 添加联系人到黑名单
-  delContact: '/contact/delContact' // 删除联系人
+  delContact: '/contact/delContact', // 删除联系人
+  getUserInfo: '/userInfo/getUserInfo', // 获取用户信息
+  saveUserInfo: '/userInfo/saveUserInfo', // 保存用户信息
+  updatePassword: '/userInfo/updatePassword' // 修改密码
 }
 export default api

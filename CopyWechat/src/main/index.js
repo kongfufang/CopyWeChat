@@ -7,8 +7,12 @@ import {
   onOpenChat,
   onWinTitleOp,
   ongetLocalStore,
-  onsetLocalStore
+  onsetLocalStore,
+  onLoadSessionData,
+  onDelChatSession,
+  onTopChatSession
 } from './ipc'
+
 const NODE_ENV = process.env.NODE_ENV
 const login_width = 300
 const login_height = 370
@@ -138,6 +142,12 @@ function createWindow() {
   onsetLocalStore()
   //获取本地存储
   ongetLocalStore()
+  //进入聊天拿取数据库内容发送给渲染进程
+  onLoadSessionData()
+  //删除某个会话
+  onDelChatSession()
+  //置顶某个会话
+  onTopChatSession()
 }
 
 // This method will be called when Electron has finished

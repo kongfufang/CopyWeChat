@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance, nextTick } from 'vue'
+import { ref, getCurrentInstance, nextTick, onMounted } from 'vue'
 import md5 from 'js-md5'
 import { useUserInfoStore } from '@/store/userInfoStore.js'
 import { useRouter } from 'vue-router'
@@ -188,7 +188,6 @@ const submit = async () => {
     // console.log(result)
     userInfoStore.setUserInfo(result)
     localStorage.setItem('token', result.token)
-
     const widowWidth = window.screen.width
     const widowHeight = window.screen.height
     router.push('/main')
@@ -201,11 +200,23 @@ const submit = async () => {
       widowWidth,
       widowHeight
     })
+
+    window.ipcRenderer.send('getLocalStore', 'devWsDomain')
   } else {
     changeOpType()
     proxy.message.success('注册成功')
   }
 }
+
+const init = () => {
+  window.ipcRenderer.send('setLocalStore', { key: 'proDomain', value: proxy.api.proDomain })
+  window.ipcRenderer.send('setLocalStore', { key: 'devDomain', value: proxy.api.devDomain })
+  window.ipcRenderer.send('setLocalStore', { key: 'proWsDomain', value: proxy.api.proWsDomain })
+  window.ipcRenderer.send('setLocalStore', { key: 'devWsDomain', value: proxy.api.devWsDomain })
+}
+onMounted(() => {
+  init()
+})
 //校验密码是否正确
 const checkValue = (type, value, msg) => {
   if (proxy.Utils.Isempty(value)) {

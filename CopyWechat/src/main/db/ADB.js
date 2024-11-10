@@ -101,7 +101,7 @@ const queryCount = (sql, params) => {
     const stmt = db.prepare(sql)
     stmt.get(params, function (err, row) {
       if (err) {
-        resolve(0)
+        return resolve(0)
       }
       resolve(Array.from(Object.values(row))[0])
     })

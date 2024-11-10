@@ -5,6 +5,7 @@ import { addUserSetting } from './db/UserSettingModel'
 import { selectUserSessionList } from './db/ChatSessionUserModel'
 import { delChatSession } from './db/ChatSessionUserModel'
 import { topChatSession } from './db/ChatSessionUserModel'
+import { selectChatMessageList } from './db/ChatMessageModel'
 //登录后的操作
 const onLoginorRegister = (callback) => {
   ipcMain.on('LoginorRegister', (e, IsLogin) => {
@@ -61,6 +62,14 @@ const onTopChatSession = () => {
     topChatSession(contactId, topType)
   })
 }
+//监听某个会话的页面得到消息的操作
+const onloadChatMessage = () => {
+  ipcMain.on('loadChatMessage', async (e, data) => {
+    const result = await selectChatMessageList(data)
+    // console.log(result)
+    e.sender.send('loadChatMessageCallback', result)
+  })
+}
 export {
   onLoginorRegister,
   onOpenChat,
@@ -69,5 +78,6 @@ export {
   ongetLocalStore,
   onLoadSessionData,
   onDelChatSession,
-  onTopChatSession
+  onTopChatSession,
+  onloadChatMessage
 }

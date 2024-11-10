@@ -32,7 +32,7 @@ const createWs = () => {
     maxReconnectTimes = 5
   }
   ws.onmessage = async function (e) {
-    // console.log('ws客户端收到消息:', e.data)
+    console.log('ws客户端收到消息:', e.data)
     const message = JSON.parse(e.data)
     const messageType = message.messageType
 

@@ -13,11 +13,16 @@
       </div>
       <div class="chat-session-list">
         <template v-for="item in chatSessionList" :key="item.contactId">
-          <ChatSession :data="item" @contextmenu.stop="onContextMenu(item, $event)"></ChatSession>
+          <ChatSession
+            :data="item"
+            @contextmenu.stop="onContextMenu(item, $event)"
+            @click="chatSessionClickHandle(item)"
+          ></ChatSession>
         </template>
       </div>
     </template>
   </Layout>
+  <WinOp></WinOp>
 </template>
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
@@ -26,6 +31,7 @@ import ChatSession from './ChatSession.vue'
 import ContextMenu from '@imengyu/vue3-context-menu'
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
 import { getCurrentInstance } from 'vue'
+import WinOp from '../../components/WinOp.vue'
 const { proxy } = getCurrentInstance()
 const searchKey = ref('')
 const search = () => {
@@ -49,12 +55,20 @@ const onReceiveMessage = () => {
     console.log('receiveMessage', message)
   })
 }
-onMounted(() => {
-  onReceiveMessage()
-  onLoadSessionData()
-  loadChatSession()
-})
-
+//会话排序规则函数
+const sortChatSessionList = (dataList) => {
+  dataList.sort((a, b) => {
+    const topTypeResult = b['topType'] - a['topType']
+    if (topTypeResult == 0) {
+      return b['lastReceiveTime'] - a['lastReceiveTime']
+    }
+    return topTypeResult
+  })
+}
+//会话删除函数(调用)
+const delChatSessionList = (contactId) => {
+  chatSessionList.value = chatSessionList.value.filter((item) => item.contactId !== contactId)
+}
 //置顶函数，与主进程进行交互
 const setTop = (data) => {
   data.topType = data.topType === 0 ? 1 : 0
@@ -62,8 +76,66 @@ const setTop = (data) => {
   chatSessionList.value = [...chatSessionList.value]
   window.ipcRenderer.send('topChatSession', { contactId: data.contactId, topType: data.topType })
 }
+const currentChatSession = ref({})
+//分页相关信息
+const messageInfo = {
+  totalPage: 0,
+  pageNo: 0,
+  maxMessageId: null,
+  noData: false
+}
+const messageList = ref([])
+//去取到相关数据(调用)
+const loadChatMessage = () => {
+  if (messageInfo.noData) {
+    console.log('没有数据了')
+    return
+  }
+  if (messageInfo.pageNo == 0) {
+    messageInfo.pageNo = 1
+  }
+  console.log('messageInfo.pageNo++', messageInfo.pageNo)
+
+  window.ipcRenderer.send('loadChatMessage', {
+    sessionId: currentChatSession.value.sessionId,
+    pageNo: messageInfo.pageNo,
+    maxMessageId: messageInfo.maxMessageId
+  })
+}
+//拿到相关数据(执行)
+const onLoadChatMessage = () => {
+  window.ipcRenderer.on('loadChatMessageCallback', (e, { dataList, totalPage, pageNo }) => {
+    if (totalPage == pageNo) {
+      messageInfo.noData = true
+    }
+    dataList.sort((a, b) => {
+      return a.messageId - b.messageId
+    })
+    // console.log(dataList)
+    // console.log(totalPage)
+    // console.log(pageNo)
+
+    messageList.value = dataList.concat(messageList.value)
+    messageInfo.totalPage = totalPage
+    messageInfo.pageNo = pageNo
+    if (pageNo == 1) {
+      messageInfo.maxMessageId =
+        dataList.length > 0 ? dataList[dataList.length - 1].messageId : null
+      //滚动到底部
+    }
+    console.log(messageList.value)
+  })
+}
+//渲染相关消息记录(执行)
+const chatSessionClickHandle = (item) => {
+  currentChatSession.value = Object.assign({}, item)
+  messageList.value = []
+  loadChatMessage()
+}
 //删除函数，与主进程进行交互
 const delChatSession = (contactId) => {
+  delChatSessionList(contactId)
+  currentChatSession.value = {}
   window.ipcRenderer.send('delChatSession', contactId)
 }
 //对人头像进行右击出现框的函数
@@ -92,21 +164,19 @@ const onContextMenu = (data, e) => {
     ]
   })
 }
-//会话排序规则函数
-const sortChatSessionList = (dataList) => {
-  dataList.sort((a, b) => {
-    const topTypeResult = b['topType'] - a['topType']
-    if (topTypeResult == 0) {
-      return b['lastReceiveTime'] - a['lastReceiveTime']
-    }
-    return topTypeResult
-  })
-}
+
+onMounted(() => {
+  onReceiveMessage()
+  onLoadSessionData()
+  loadChatSession()
+  onLoadChatMessage()
+})
 
 //页面结束删除监听
 onUnmounted(() => {
   window.ipcRenderer.removeAllListeners('loadSessionDataCallback')
   window.ipcRenderer.removeAllListeners('receiveMessage')
+  window.ipcRenderer.removeAllListeners('loadChatMessageCallback')
 })
 </script>
 

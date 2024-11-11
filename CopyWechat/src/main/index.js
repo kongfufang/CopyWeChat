@@ -11,7 +11,9 @@ import {
   onLoadSessionData,
   onDelChatSession,
   onTopChatSession,
-  onloadChatMessage
+  onloadChatMessage,
+  onAddLocalMessage,
+  onSetSessionSelect
 } from './ipc'
 
 const NODE_ENV = process.env.NODE_ENV
@@ -151,6 +153,10 @@ function createWindow() {
   onTopChatSession()
   //拿到某个会话的消息记录
   onloadChatMessage()
+  //发送消息后存入本地
+  onAddLocalMessage()
+  //点击某个会话时保存当前会话的id
+  onSetSessionSelect()
 }
 
 // This method will be called when Electron has finished

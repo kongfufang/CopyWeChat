@@ -22,6 +22,7 @@ const api = {
   delContact: '/contact/delContact', // 删除联系人
   getUserInfo: '/userInfo/getUserInfo', // 获取用户信息
   saveUserInfo: '/userInfo/saveUserInfo', // 保存用户信息
-  updatePassword: '/userInfo/updatePassword' // 修改密码
+  updatePassword: '/userInfo/updatePassword', // 修改密码
+  sendMessage: '/chat/sendMessage' // 发送消息
 }
 export default api

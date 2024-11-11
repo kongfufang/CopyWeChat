@@ -1,0 +1,237 @@
+<template>
+  <div class="send-panel">
+    <div class="toolbar">
+      <el-popover
+        :visibel="showEmojiPopover"
+        trigger="click"
+        palceholder="top"
+        :teleported="false"
+        :popper-style="{ width: '490px', padding: '0 10px 10px 10px' }"
+        @show="openPopover"
+      >
+        <template #default>
+          <el-tabs v-model="activeEmoji" @click.stop>
+            <el-tab-pane
+              v-for="emoji in emojiList"
+              :key="emoji.name"
+              :label="emoji.name"
+              :name="emoji.name"
+            >
+              <div class="emoji-list">
+                <div
+                  v-for="item in emoji.list"
+                  :key="item"
+                  class="emoji-item"
+                  @click="sendEmoji(item)"
+                >
+                  {{ item }}
+                </div>
+              </div>
+            </el-tab-pane>
+          </el-tabs>
+        </template>
+        <template #reference>
+          <div class="iconfont icon-emoji" @click="showEmojiPopoverHandle"></div>
+        </template>
+      </el-popover>
+      <el-upload
+        ref="uploadRef"
+        name="file"
+        :show-file-list="false"
+        :multiple="true"
+        :limit="fileLimit"
+        :http-request="uploadFile"
+        :on-exceed="fileExceed"
+        ><div class="iconfont icon-folder"></div
+      ></el-upload>
+    </div>
+    <div class="input-area" @drop="dropHandle" @dragover="dragOverHandle">
+      <el-input
+        v-model="messageContent"
+        rows="5"
+        type="textarea"
+        resize="none"
+        maxlength="500"
+        show-word-limit
+        spellcheck="false"
+        input-style="background:#f5f5f5;border:none;"
+        @keydown.enter="sendMessage"
+        @paste="pastFile"
+      ></el-input>
+    </div>
+    <div class="send-btn-panel">
+      <el-popover
+        :visibel="showSendMsgPopover"
+        :hide-after="1500"
+        trigger="click"
+        palceholder="top-end"
+        :teleported="false"
+        :popper-style="{ width: '120', padding: '5px', 'min-width': '0' }"
+        @show="openPopover"
+        @hide="closePopover"
+      >
+        <template #default><span class="empty-msg">不能发送空白消息</span></template>
+        <template #reference>
+          <span class="send-btn" @click="sendMessage">发送(S)</span>
+        </template>
+      </el-popover>
+    </div>
+    <SearchAdd ref="searchAddRef"></SearchAdd>
+  </div>
+</template>
+
+<script setup>
+import { ref, getCurrentInstance } from 'vue'
+import emojiList from '../../Utils/Emoji'
+import { useUserInfoStore } from '../../store/userInfoStore'
+import SearchAdd from '../contact/SearchAdd.vue'
+const userInfoStore = useUserInfoStore()
+const activeEmoji = ref('人物')
+const messageContent = ref('')
+const showEmojiPopover = ref(false)
+const showSendMsgPopover = ref(false)
+const { proxy } = getCurrentInstance()
+
+const props = defineProps({
+  currentChatSession: {
+    type: Object,
+    default: () => {}
+  }
+})
+
+//发送消息(执行)
+const sendMessage = (e) => {
+  if (e.shiftKey || e.keyCode === 13) {
+    return
+  }
+  e.preventDefault()
+  if (messageContent.value.trim() === '') {
+    console.log('不能发送空白消息')
+    showSendMsgPopover.value = true
+    return
+  }
+  sendMessageDo({ messageContent: messageContent.value, messageType: 2 })
+}
+//发送消息(调用)
+const sendMessageDo = async (
+  messageObj = {
+    messageContent,
+    messageType,
+    localFilePath,
+    fileSize,
+    fileName,
+    filePath,
+    fileType
+  },
+  cleanMsgContent
+) => {
+  if (messageObj.fileSize == 0) {
+    proxy.confirm({
+      message: `${messageObj.fileName}文件为空请重新选择`,
+      showCancelButton: false
+    })
+    return
+  }
+  messageObj.sendUserId = userInfoStore.getUserInfo().userId
+  messageObj.sessionId = props.currentChatSession.sessionId
+
+  let result = await proxy.Request({
+    url: proxy.api.sendMessage,
+    params: {
+      messageContent: messageObj.messageContent,
+      contactId: props.currentChatSession.contactId,
+      messageType: messageObj.messageType,
+      fileSize: messageObj.fileSize,
+      fileName: messageObj.fileName,
+      fileType: messageObj.fileType
+    },
+    showError: false,
+    errorCallback: (responceData) => {
+      proxy.confirm({
+        message: responceData.info,
+        okfun: () => {
+          addContact(props.currentChatSession.contactId, responceData.code)
+        },
+        okText: '重新申请'
+      })
+    }
+  })
+  cleanMsgContent = true
+  if (!result) {
+    console.log('发送消息失败')
+    return
+  }
+  if (cleanMsgContent) {
+    messageContent.value = ''
+  }
+  Object.assign(messageObj, result)
+  window.ipcRenderer.send('addLocalMessage', messageObj)
+}
+
+//发送消息失败，需要添加好友
+const searchAddRef = ref()
+const addContact = (constactId, code) => {
+  searchAddRef.value.show({ contactId: constactId, contactType: code == 902 ? 'USER' : 'GROUP' })
+}
+</script>
+
+<style lang="scss" scoped>
+.send-panel {
+  height: 200px;
+  border-top: 1px solid #ddd;
+  .toolbar {
+    height: 40px;
+    display: flex;
+    align-items: center;
+  }
+  .iconfont {
+    color: #494949;
+    font-size: 20px;
+    margin-left: 10px;
+    cursor: pointer;
+    :deep(.el-tabs_header) {
+      margin-bottom: 0px;
+    }
+  }
+  .input-area {
+    padding: 0 10px;
+    outline: none;
+    width: 100%;
+    height: 115px;
+    overflow: auto;
+    word-wrap: break-word;
+    word-break: break-all;
+    :deep(.el-textarea__inner) {
+      box-shadow: none;
+    }
+    :deep(.el-input__count) {
+      background: none;
+      right: 12px;
+    }
+  }
+  .send-btn-panel {
+    text-align: right;
+    padding-top: 10px;
+    margin-right: 22px;
+    .send-btn {
+      cursor: pointer;
+      color: #07c160;
+      background: #e9e9e9;
+      padding: 8px 25px;
+      border-radius: 5px;
+      &:hover {
+        background: #d2d2d2;
+      }
+    }
+    .empty-msg {
+      font-size: 13px;
+    }
+  }
+}
+.emoji-list {
+  .emoji-item {
+    float: left;
+    font-size: 23px;
+  }
+}
+</style>

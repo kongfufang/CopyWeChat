@@ -78,10 +78,61 @@ const topChatSession = (contactId, topType) => {
   }
   return update('chat_session_user', sessionInfo, paramData)
 }
+
+//某人发送消息后更新的一系列操作
+const updateSessionInfo4Message = (
+  currentSessionId,
+  { sessionId, contactName, lastMessage, lastReceiveTime, contactId, memberCount }
+) => {
+  const params = [lastMessage, lastReceiveTime]
+  let sql = 'update chat_session_user set last_message = ? ,last_receive_time = ? ,status = 1'
+  if (contactName) {
+    sql += ',contact_name = ?'
+    params.push(contactName)
+  }
+  if (memberCount != null) {
+    sql += ',member_count = ?'
+    params.push(memberCount)
+  }
+  if (sessionId != currentSessionId) {
+    sql += ',no_read_count = no_read_count + 1'
+  }
+  sql += ' where user_id = ? and contact_id = ?'
+  params.push(store.getUserId())
+  params.push(contactId)
+  return run(sql, params)
+}
+
+//设置会话选中后清空未读数量
+const readAll = (contactId) => {
+  let sql = 'update chat_session_user set no_read_count = 0 where user_id = ? and contact_id = ?'
+  return run(sql, [store.getUserId(), contactId])
+}
+
+//发消息后更新被发送人的会话列表
+const saveOrUpdate4Message = (currentSessionId, sessionInfo) => {
+  return new Promise((resolve) => {
+    async function startFunction() {
+      let sessionData = await selectUserSessionByContactId(sessionInfo.contactId)
+      if (sessionData) {
+        updateSessionInfo4Message(currentSessionId, sessionInfo)
+      } else {
+        sessionInfo.noReadCount = 1
+        await addChatSession(sessionInfo)
+      }
+      resolve()
+    }
+    startFunction()
+  })
+}
 export {
   saveOrUpdateChatSessionBatch4Init,
   updateNoReadCount,
   selectUserSessionList,
   delChatSession,
-  topChatSession
+  topChatSession,
+  updateSessionInfo4Message,
+  readAll,
+  saveOrUpdate4Message,
+  selectUserSessionByContactId
 }

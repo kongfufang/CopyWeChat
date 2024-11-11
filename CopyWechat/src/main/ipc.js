@@ -2,10 +2,14 @@ import { ipcMain } from 'electron'
 import store from './store'
 import { initWs } from './wsClient'
 import { addUserSetting } from './db/UserSettingModel'
-import { selectUserSessionList } from './db/ChatSessionUserModel'
+import {
+  readAll,
+  selectUserSessionList,
+  updateSessionInfo4Message
+} from './db/ChatSessionUserModel'
 import { delChatSession } from './db/ChatSessionUserModel'
 import { topChatSession } from './db/ChatSessionUserModel'
-import { selectChatMessageList } from './db/ChatMessageModel'
+import { selectChatMessageList, saveMessage } from './db/ChatMessageModel'
 //登录后的操作
 const onLoginorRegister = (callback) => {
   ipcMain.on('LoginorRegister', (e, IsLogin) => {
@@ -70,6 +74,29 @@ const onloadChatMessage = () => {
     e.sender.send('loadChatMessageCallback', result)
   })
 }
+//监听某个会话发送消息的操作
+const onAddLocalMessage = () => {
+  ipcMain.on('addLocalMessage', async (e, data) => {
+    await saveMessage(data)
+    data.lastReceiveTime = data.sendTime
+    //更新所有会话
+    updateSessionInfo4Message(store.getUserData('currentSessionId'), data)
+    e.sender.send('addLocalMessageCallback', { status: 1, messageId: data.messageId })
+  })
+}
+
+//点击某个会话时保存当前的会话id
+const onSetSessionSelect = () => {
+  ipcMain.on('setSessionSelect', (e, { contactId, sessionId }) => {
+    if (sessionId) {
+      store.setUserData('currentSessionId', sessionId)
+      readAll(contactId)
+    } else {
+      store.deleteUserData('currentSessionId')
+    }
+  })
+}
+
 export {
   onLoginorRegister,
   onOpenChat,
@@ -79,5 +106,7 @@ export {
   onLoadSessionData,
   onDelChatSession,
   onTopChatSession,
-  onloadChatMessage
+  onloadChatMessage,
+  onAddLocalMessage,
+  onSetSessionSelect
 }

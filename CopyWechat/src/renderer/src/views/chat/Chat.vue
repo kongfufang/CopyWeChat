@@ -21,6 +21,34 @@
         </template>
       </div>
     </template>
+    <template #right-content>
+      <div v-if="Object.keys(currentChatSession).length > 0" class="title-panel drag">
+        <div class="title">
+          <span>{{ currentChatSession.contactName }}</span>
+          <span v-if="currentChatSession.contactType == 1"
+            >({{ currentChatSession.memberCount }})</span
+          >
+        </div>
+      </div>
+      <div
+        v-if="currentChatSession.contactType == 1"
+        class="iconfont icon-more no-drag"
+        @click="showGroupDetail"
+      ></div>
+      <div v-show="Object.keys(currentChatSession).length > 0" class="chat-panel">
+        <div id="message-panel" class="message-panel">
+          <div
+            v-for="data in messageList"
+            :id="'message' + messageId"
+            :key="data.sessionId"
+            class="message-item"
+          >
+            {{ data.messageContent }}
+          </div>
+        </div>
+        <MessageSend :current-chat-session="currentChatSession"></MessageSend>
+      </div>
+    </template>
   </Layout>
   <WinOp></WinOp>
 </template>
@@ -32,6 +60,7 @@ import ContextMenu from '@imengyu/vue3-context-menu'
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
 import { getCurrentInstance } from 'vue'
 import WinOp from '../../components/WinOp.vue'
+import MessageSend from './MessageSend.vue'
 const { proxy } = getCurrentInstance()
 const searchKey = ref('')
 const search = () => {
@@ -46,7 +75,7 @@ const chatSessionList = ref([])
 const onLoadSessionData = () => {
   window.ipcRenderer.on('loadSessionDataCallback', (e, dataList) => {
     sortChatSessionList(dataList)
-    console.log('loadSessionDataCallback', dataList)
+    // console.log('loadSessionDataCallback', dataList)
     chatSessionList.value = dataList
   })
 }
@@ -91,10 +120,8 @@ const loadChatMessage = () => {
     console.log('没有数据了')
     return
   }
-  if (messageInfo.pageNo == 0) {
-    messageInfo.pageNo = 1
-  }
-  console.log('messageInfo.pageNo++', messageInfo.pageNo)
+  messageInfo.pageNo++
+  // console.log('messageInfo.pageNo++', messageInfo.pageNo)
 
   window.ipcRenderer.send('loadChatMessage', {
     sessionId: currentChatSession.value.sessionId,
@@ -123,14 +150,25 @@ const onLoadChatMessage = () => {
         dataList.length > 0 ? dataList[dataList.length - 1].messageId : null
       //滚动到底部
     }
-    console.log(messageList.value)
+    // console.log(messageList.value)
   })
 }
+
+//点击后保存当前的会话Id
+const setSessionSelect = (contactId, sessionId) => {
+  window.ipcRenderer.send('setSessionSelect', { contactId, sessionId })
+}
+
 //渲染相关消息记录(执行)
 const chatSessionClickHandle = (item) => {
   currentChatSession.value = Object.assign({}, item)
   messageList.value = []
+  messageInfo.maxMessageId = null
+  messageInfo.noData = false
+  messageInfo.pageNo = 0
+  messageInfo.totalPage = 1
   loadChatMessage()
+  setSessionSelect({ contactId: item.contactId, sessionId: item.sessionId })
 }
 //删除函数，与主进程进行交互
 const delChatSession = (contactId) => {
@@ -204,5 +242,43 @@ onUnmounted(() => {
 }
 .chat-session-list::-webkit-scrollbar {
   display: none;
+}
+.title-panel {
+  display: flex;
+  align-items: center;
+  .title {
+    height: 60px;
+    line-height: 60px;
+    padding-left: 10px;
+    font-size: 18px;
+    color: #000000;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+.icon-more {
+  position: absolute;
+  top: 30px;
+  right: 3px;
+  z-index: 1;
+  width: 20px;
+  font-size: 20px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+.chat-panel {
+  background: #f5f5f5;
+  border-top: 1px solid #ddd;
+  .message-panel {
+    padding: 10px 30px 0 30px;
+    overflow-y: auto;
+    height: calc(100vh - 200px - 62px);
+    .message-item {
+      margin-bottom: 15px;
+      text-align: center;
+    }
+  }
 }
 </style>

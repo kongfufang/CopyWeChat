@@ -70,11 +70,11 @@ const selectChatMessageList = ({ sessionId, pageNo, maxMessageId }) => {
       params.push(limit)
       sql += ' order by message_id  limit ? , ?'
       const dataList = await queryAll(sql, params)
-      console.log('dataList:', dataList)
+      // console.log('dataList:', dataList)
       resolve({ dataList, pageTotal, pageNo })
     }
     startFunction()
   })
 }
 
-export { saveMessageBatch, selectChatMessageList }
+export { saveMessageBatch, selectChatMessageList, saveMessage }

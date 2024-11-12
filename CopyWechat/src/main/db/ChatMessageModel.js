@@ -1,6 +1,6 @@
 import store from '../store'
 
-import { insertOrReplace, queryAll, queryCount } from './ADB'
+import { insertOrReplace, queryAll, queryCount, update } from './ADB'
 import { updateNoReadCount } from './ChatSessionUserModel'
 //插入单条数据(调用)
 const saveMessage = (data) => {
@@ -77,4 +77,9 @@ const selectChatMessageList = ({ sessionId, pageNo, maxMessageId }) => {
   })
 }
 
-export { saveMessageBatch, selectChatMessageList, saveMessage }
+const updateMessage = (data, paramData) => {
+  paramData.userId = store.getUserId()
+  return update('chat_message', data, paramData)
+}
+
+export { saveMessageBatch, selectChatMessageList, saveMessage, updateMessage }

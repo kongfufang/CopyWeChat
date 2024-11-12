@@ -97,4 +97,7 @@ const props = defineProps({
     color: #8f8f8f;
   }
 }
+.active {
+  background: #d8d8d7;
+}
 </style>

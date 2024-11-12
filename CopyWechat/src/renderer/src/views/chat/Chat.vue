@@ -15,6 +15,7 @@
         <template v-for="item in chatSessionList" :key="item.contactId">
           <ChatSession
             :data="item"
+            :current-session="currentChatSession.contactId == item.contactId"
             @contextmenu.stop="onContextMenu(item, $event)"
             @click="chatSessionClickHandle(item)"
           ></ChatSession>
@@ -43,17 +44,24 @@
             :key="data.sessionId"
             class="message-item"
           >
-            {{ data.messageContent }}
+            <template
+              v-if="data.messageType === 1 || data.messageType === 2 || data.messageType === 5"
+            >
+              <ChatMessage :data="data" :current-chat-session="currentChatSession"></ChatMessage>
+            </template>
           </div>
         </div>
-        <MessageSend :current-chat-session="currentChatSession"></MessageSend>
+        <MessageSend
+          :current-chat-session="currentChatSession"
+          @send-message4-local="sendMessage4LocalHandle"
+        ></MessageSend>
       </div>
     </template>
   </Layout>
   <WinOp></WinOp>
 </template>
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import Layout from '../../components/Layout.vue'
 import ChatSession from './ChatSession.vue'
 import ContextMenu from '@imengyu/vue3-context-menu'
@@ -61,6 +69,7 @@ import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css'
 import { getCurrentInstance } from 'vue'
 import WinOp from '../../components/WinOp.vue'
 import MessageSend from './MessageSend.vue'
+import ChatMessage from './ChatMessage.vue'
 const { proxy } = getCurrentInstance()
 const searchKey = ref('')
 const search = () => {
@@ -81,7 +90,21 @@ const onLoadSessionData = () => {
 }
 const onReceiveMessage = () => {
   window.ipcRenderer.on('receiveMessage', (e, message) => {
-    console.log('receiveMessage', message)
+    // console.log('receiveMessage', message)
+    let curSession = chatSessionList.value.find((item) => item.sessionId == message.sessionId)
+    if (curSession == null) {
+      chatSessionList.value.push(message.extendData)
+    } else {
+      Object.assign(curSession, message.extendData)
+    }
+    sortChatSessionList(chatSessionList.value)
+    if (message.sessionId != currentChatSession.value.sessionId) {
+      //处理气泡
+    } else {
+      Object.assign(currentChatSession.value, message.extendData)
+      messageList.value.push(message)
+      gotoBottom()
+    }
   })
 }
 //会话排序规则函数
@@ -149,6 +172,7 @@ const onLoadChatMessage = () => {
       messageInfo.maxMessageId =
         dataList.length > 0 ? dataList[dataList.length - 1].messageId : null
       //滚动到底部
+      gotoBottom()
     }
     // console.log(messageList.value)
   })
@@ -202,7 +226,28 @@ const onContextMenu = (data, e) => {
     ]
   })
 }
-
+//点击发送添加消息并立即更新关于自己的消息页面
+const sendMessage4LocalHandle = (messageObj) => {
+  messageList.value.push(messageObj)
+  const chatSession = chatSessionList.value.find((item) => item.sessionId == messageObj.sessionId)
+  if (chatSession) {
+    chatSession.lastMessage = messageObj.messageContent
+    chatSession.lastReceiveTime = messageObj.sendTime
+  }
+  sortChatSessionList(chatSessionList.value)
+  gotoBottom()
+}
+//发送消息后到达底部
+const gotoBottom = () => {
+  nextTick(() => {
+    const items = document.querySelectorAll('.message-item')
+    if (items.length > 0) {
+      setTimeout(() => {
+        items[items.length - 1].scrollIntoView()
+      }, 100)
+    }
+  })
+}
 onMounted(() => {
   onReceiveMessage()
   onLoadSessionData()

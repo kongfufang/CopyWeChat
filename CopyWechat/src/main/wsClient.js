@@ -39,7 +39,7 @@ const createWs = () => {
     // console.log('ws客户端收到消息:', e.data)
     const message = JSON.parse(e.data)
     const messageType = message.messageType
-
+    // console.log('messageType:', messageType)
     switch (messageType) {
       case 0:
         //处理三个表的数据
@@ -71,6 +71,7 @@ const createWs = () => {
         //更新数据库
         const dbSessionInfo = await selectUserSessionByContactId(message.contactId)
         message.extendData = dbSessionInfo
+        // console.log('接收到消息:', message)
         sender.send('receiveMessage', message)
         break
       }

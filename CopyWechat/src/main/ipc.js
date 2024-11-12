@@ -9,7 +9,8 @@ import {
 } from './db/ChatSessionUserModel'
 import { delChatSession } from './db/ChatSessionUserModel'
 import { topChatSession } from './db/ChatSessionUserModel'
-import { selectChatMessageList, saveMessage } from './db/ChatMessageModel'
+import { selectChatMessageList, saveMessage, updateMessage } from './db/ChatMessageModel'
+import { saveMessage2Local } from './file'
 //登录后的操作
 const onLoginorRegister = (callback) => {
   ipcMain.on('LoginorRegister', (e, IsLogin) => {
@@ -78,6 +79,14 @@ const onloadChatMessage = () => {
 const onAddLocalMessage = () => {
   ipcMain.on('addLocalMessage', async (e, data) => {
     await saveMessage(data)
+    //如果是文件消息则保存文件到本地
+    if (data.messageType === 5) {
+      await saveMessage2Local(data.messageId, data.filePath, data.fileType)
+      const updateInfo = {
+        status: 1
+      }
+      await updateMessage(updateInfo, { messageId: data.messageId })
+    }
     data.lastReceiveTime = data.sendTime
     //更新所有会话
     updateSessionInfo4Message(store.getUserData('currentSessionId'), data)

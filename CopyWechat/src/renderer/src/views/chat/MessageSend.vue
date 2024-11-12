@@ -2,9 +2,9 @@
   <div class="send-panel">
     <div class="toolbar">
       <el-popover
-        :visibel="showEmojiPopover"
+        v-model="showEmojiPopover"
         trigger="click"
-        palceholder="top"
+        placement="top"
         :teleported="false"
         :popper-style="{ width: '490px', padding: '0 10px 10px 10px' }"
         @show="openPopover"
@@ -61,12 +61,12 @@
     </div>
     <div class="send-btn-panel">
       <el-popover
-        :visibel="showSendMsgPopover"
-        :hide-after="1500"
+        v-model="showSendMsgPopover"
+        hide-after="1500"
         trigger="click"
-        palceholder="top-end"
+        placement="top-end"
         :teleported="false"
-        :popper-style="{ width: '120', padding: '5px', 'min-width': '0' }"
+        :popper-style="{ width: '120px', padding: '5px', 'min-width': '0' }"
         @show="openPopover"
         @hide="closePopover"
       >
@@ -85,6 +85,7 @@ import { ref, getCurrentInstance } from 'vue'
 import emojiList from '../../Utils/Emoji'
 import { useUserInfoStore } from '../../store/userInfoStore'
 import SearchAdd from '../contact/SearchAdd.vue'
+import { getFileType } from '../../Utils/Constans'
 const userInfoStore = useUserInfoStore()
 const activeEmoji = ref('人物')
 const messageContent = ref('')
@@ -99,7 +100,7 @@ const props = defineProps({
   }
 })
 
-//发送消息(执行)
+//发送简单消息(执行)
 const sendMessage = (e) => {
   if (e.shiftKey || e.keyCode === 13) {
     return
@@ -112,7 +113,8 @@ const sendMessage = (e) => {
   }
   sendMessageDo({ messageContent: messageContent.value, messageType: 2 })
 }
-//发送消息(调用)
+//发送所有类型的消息(调用)
+const emit = defineEmits(['sendMessage4Local'])
 const sendMessageDo = async (
   messageObj = {
     messageContent,
@@ -145,6 +147,7 @@ const sendMessageDo = async (
       fileName: messageObj.fileName,
       fileType: messageObj.fileType
     },
+    showLoading: false,
     showError: false,
     errorCallback: (responceData) => {
       proxy.confirm({
@@ -165,6 +168,7 @@ const sendMessageDo = async (
     messageContent.value = ''
   }
   Object.assign(messageObj, result)
+  emit('sendMessage4Local', messageObj)
   window.ipcRenderer.send('addLocalMessage', messageObj)
 }
 
@@ -172,6 +176,34 @@ const sendMessageDo = async (
 const searchAddRef = ref()
 const addContact = (constactId, code) => {
   searchAddRef.value.show({ contactId: constactId, contactType: code == 902 ? 'USER' : 'GROUP' })
+}
+
+//得到文件类型(调用)
+const getFileTypeByName = (fileName) => {
+  const fileSuffix = fileName.slice(fileName.lastIndexOf('.') + 1)
+  return getFileType(fileSuffix)
+}
+
+//文件上传(调用)
+const uploadFileDo = (file) => {
+  const fileType = getFileTypeByName(file.name)
+  sendMessageDo(
+    {
+      messageContent: '[' + getFileType(fileType) + ']',
+      messageType: 5,
+      fileSize: file.size,
+      fileName: file.name,
+      fileType: fileType,
+      filePath: file.path
+    },
+    false
+  )
+}
+const uploadRef = ref()
+//上传文件(执行)
+const uploadFile = (file) => {
+  uploadFileDo(file.file)
+  uploadRef.value.clearFiles()
 }
 </script>
 

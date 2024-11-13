@@ -248,11 +248,22 @@ const gotoBottom = () => {
     }
   })
 }
+
+//发送视频等媒体消息成功后的回调
+const onAddLocalMessageCallback = () => {
+  window.ipcRenderer.on('addLocalMessageCallback', (e, { status, messageId }) => {
+    const findMessage = messageList.value.find((item) => item.messageId == messageId)
+    if (findMessage != null) {
+      findMessage.status = status
+    }
+  })
+}
 onMounted(() => {
   onReceiveMessage()
   onLoadSessionData()
   loadChatSession()
   onLoadChatMessage()
+  onAddLocalMessageCallback()
 })
 
 //页面结束删除监听
@@ -260,6 +271,7 @@ onUnmounted(() => {
   window.ipcRenderer.removeAllListeners('loadSessionDataCallback')
   window.ipcRenderer.removeAllListeners('receiveMessage')
   window.ipcRenderer.removeAllListeners('loadChatMessageCallback')
+  window.ipcRenderer.removeAllListeners('addLocalMessageCallback')
 })
 </script>
 

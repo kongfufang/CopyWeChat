@@ -1,6 +1,6 @@
 import store from '../store'
 
-import { insertOrReplace, queryAll, queryCount, update } from './ADB'
+import { insertOrReplace, queryAll, queryCount, queryOne, update } from './ADB'
 import { updateNoReadCount } from './ChatSessionUserModel'
 //插入单条数据(调用)
 const saveMessage = (data) => {
@@ -68,7 +68,7 @@ const selectChatMessageList = ({ sessionId, pageNo, maxMessageId }) => {
       }
       params.push(offset)
       params.push(limit)
-      sql += ' order by message_id  limit ? , ?'
+      sql += ' order by message_id desc limit ? , ?'
       const dataList = await queryAll(sql, params)
       // console.log('dataList:', dataList)
       resolve({ dataList, pageTotal, pageNo })
@@ -81,5 +81,10 @@ const updateMessage = (data, paramData) => {
   paramData.userId = store.getUserId()
   return update('chat_message', data, paramData)
 }
-
-export { saveMessageBatch, selectChatMessageList, saveMessage, updateMessage }
+//通过id查询数据
+const selectByMessageId = (messageId) => {
+  const sql = 'select * from chat_message  where message_id=? and user_id=?'
+  const params = [messageId, store.getUserId()]
+  return queryOne(sql, params)
+}
+export { saveMessageBatch, selectChatMessageList, saveMessage, updateMessage, selectByMessageId }

@@ -42,8 +42,12 @@
 
 <script setup>
 //基础数据
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserInfoStore } from '../store/userInfoStore'
+import { useGlobalInfoStore } from '../store/GlobalInfoStore'
+const globalInfoStore = useGlobalInfoStore()
+const userInfoStore = useUserInfoStore()
 const router = useRouter()
 const menuList = ref([
   {
@@ -68,12 +72,23 @@ const menuList = ref([
   }
 ])
 
+const getLoginInfo = () => {
+  window.ipcRenderer.send('getLocalStore', userInfoStore.getUserInfo().userId + 'localServerPort')
+}
 //切换菜单函数
 const currentType = ref(menuList.value[0])
 const changeType = (item) => {
   currentType.value = item
   router.push(item.path)
 }
+
+onMounted(() => {
+  getLoginInfo()
+  window.ipcRenderer.on('getLocalStoreCallback', (event, serverPort) => {
+    console.log('serverPort', serverPort)
+    globalInfoStore.setGlobalInfo('serverPort', serverPort)
+  })
+})
 </script>
 
 <style lang="scss" scoped>

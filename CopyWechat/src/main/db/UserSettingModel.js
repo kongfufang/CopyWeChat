@@ -1,3 +1,4 @@
+import { startLocalServer } from '../file'
 import store from '../store'
 import { insertOrIgnore, queryOne, run, update } from './ADB'
 const os = require('os')
@@ -26,7 +27,7 @@ const addUserSetting = async (userId, email) => {
   console.log('serverPort:', serverPort)
 
   if (serverPort === null) {
-    serverPort = 10240
+    serverPort = 10340
   } else {
     serverPort++
   }
@@ -53,6 +54,7 @@ const addUserSetting = async (userId, email) => {
     resultServerPort = serverPort
   }
   //启动本地服务
+  startLocalServer(resultServerPort)
   store.setUserData('localServerPort', resultServerPort)
   store.setUserData('localFileFolder', localFileFolder)
 }

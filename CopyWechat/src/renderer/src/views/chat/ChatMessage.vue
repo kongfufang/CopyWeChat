@@ -10,7 +10,11 @@
       </div>
       <template v-else>
         <div v-if="data.messageType != 5" class="content" v-text="data.messageContent"></div>
-        <div v-else class="content">媒体消息</div>
+        <div v-if="data.fileType == 0" class="content">
+          <chatMessageImage :data="data"></chatMessageImage>
+        </div>
+        <div v-if="data.fileType == 1" class="content">文件消息</div>
+        <div v-if="data.fileType == 2" class="content">其他消息</div>
       </template>
     </div>
     <Avatar :user-id="userInfoStore.getUserInfo().userId"></Avatar>
@@ -34,7 +38,9 @@
       </div>
       <template v-else>
         <div v-if="data.messageType != 5" class="content" v-text="data.messageContent"></div>
-        <div v-else class="content">媒体消息</div>
+        <div v-if="data.fileType == 0" class="content">图片消息</div>
+        <div v-if="data.fileType == 1" class="content">文件消息</div>
+        <div v-if="data.fileType == 2" class="content">其他消息</div>
       </template>
     </div>
   </div>
@@ -43,6 +49,7 @@
 <script setup>
 import Avatar from '../../components/Avatar.vue'
 import { useUserInfoStore } from '../../store/userInfoStore'
+import chatMessageImage from './chatMessageImage.vue'
 const userInfoStore = useUserInfoStore()
 const props = defineProps({
   data: {

@@ -14,8 +14,10 @@ import {
   onloadChatMessage,
   onAddLocalMessage,
   onSetSessionSelect,
-  OnCreateCover
+  OnCreateCover,
+  onOpenNewWindow
 } from './ipc'
+import { saveWindow } from './WindowProxy'
 
 const NODE_ENV = process.env.NODE_ENV
 const login_width = 300
@@ -41,6 +43,7 @@ function createWindow() {
     }
   })
   //开去控制台
+  saveWindow('main', mainWindow)
   if (NODE_ENV === 'development') {
     mainWindow.webContents.openDevTools()
   }
@@ -160,6 +163,8 @@ function createWindow() {
   onSetSessionSelect()
   //发送视频消息
   OnCreateCover()
+  //点击图片/视频进行预览
+  onOpenNewWindow()
 }
 
 // This method will be called when Electron has finished

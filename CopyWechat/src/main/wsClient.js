@@ -4,7 +4,7 @@ import {
   saveOrUpdateChatSessionBatch4Init,
   selectUserSessionByContactId
 } from './db/ChatSessionUserModel'
-import { saveMessage, saveMessageBatch } from './db/ChatMessageModel'
+import { saveMessage, saveMessageBatch, updateMessage } from './db/ChatMessageModel'
 import { updateContactNoReadCount } from './db/UserSettingModel'
 import { saveOrUpdate4Message } from './db/ChatSessionUserModel'
 const NODE_ENV = process.env.NODE_ENV
@@ -39,7 +39,7 @@ const createWs = () => {
     // console.log('ws客户端收到消息:', e.data)
     const message = JSON.parse(e.data)
     const messageType = message.messageType
-    // console.log('messageType:', messageType)
+    console.log('messageType:', messageType)
     switch (messageType) {
       case 0:
         //处理三个表的数据
@@ -51,7 +51,14 @@ const createWs = () => {
         })
         sender.send('receiveMessage', { messageType: message.messageType })
         break
-      case 2: {
+      case 6: {
+        updateMessage({ status: 1 }, { messageId: message.messageId })
+        sender.send('receiveMessage', { message })
+        break
+      }
+      case 2:
+      case 5: {
+        console.log(111111111)
         if (message.sendUserId === store.getUserId() && message.contactType === 1) {
           break
         }

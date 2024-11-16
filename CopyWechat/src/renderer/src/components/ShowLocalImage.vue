@@ -1,6 +1,11 @@
 <template>
   <div class="image-panel" @click="showImagePanel">
-    <el-image :src="serverUrl" fit="scale-down" :width="props.width"></el-image>
+    <el-image :src="serverUrl" fit="scale-down" :width="width">
+      <template #error> <div class="iconfont icon-image-error"></div> </template
+    ></el-image>
+    <div v-if="showPlay" class="play-panel">
+      <span class="iconfont icon-video-play"></span>
+    </div>
   </div>
 </template>
 
@@ -56,5 +61,30 @@ onMounted(() => {
   display: flex;
   overflow: hidden;
   cursor: pointer;
+  .icon-image-error {
+    margin: 0 auto;
+    font-size: 30px;
+    color: #838383;
+  }
+}
+
+.play-panel {
+  z-index: 2;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  .icon-video-play {
+    font-size: 35px;
+    color: #fff;
+  }
+  &:hover {
+    opacity: 0.8;
+  }
 }
 </style>

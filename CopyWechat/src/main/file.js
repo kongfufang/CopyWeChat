@@ -8,7 +8,6 @@ const FormData = require('form-data')
 const axios = require('axios')
 import store from './store'
 import { selectByMessageId } from './db/ChatMessageModel'
-import { config } from 'process'
 const moment = require('moment')
 moment.locale('zh-cn', {})
 const cover_image_suffix = '_cover.png'
@@ -56,9 +55,10 @@ const getLocalFilePath = (partType, showCover, fileId) => {
         let fileSuffix = messageInfo.fileName
         fileSuffix = fileSuffix.substring(fileSuffix.lastIndexOf('.'))
         localPath = localFileFolder + '/' + fileId + fileSuffix
-        // console.log('localPath:', localPath)
       }
-      console.log('localPath:', localPath)
+      if (showCover) {
+        localPath = localPath + cover_image_suffix
+      }
       resolve(localPath)
     }
     startFunction()
@@ -144,7 +144,7 @@ const saveMessage2Local = (messageId, filePath, fileType) => {
         command = `"${ffmpegPath}" -i "${savePath}" -y -vframes 1 -vf "scale='min(170,iw*min(170/iw,170/ih))':'min(170,ih*min(170/iw,170/ih))'" "${coverPath}"`
         await execCommand(command)
       }
-      uploadFile(messageId, savePath, coverPath)
+      await uploadFile(messageId, savePath, coverPath)
       resolve()
     }
     startFunction()
@@ -175,9 +175,9 @@ expressServer.get('/file', async (req, res) => {
     return
   }
   // console.log('fileId:', fileId)
-
-  showCover = showCover === undefined ? false : Boolean(showCover)
+  showCover = showCover == undefined ? false : Boolean(showCover)
   const localPath = await getLocalFilePath(partType, showCover, fileId)
+  console.log('localPath:', localPath)
   if (!fs.existsSync(localPath) || forceGet == 'true') {
     if (forceGet == 'true' && partType == 'avatar') {
       await downFile(fileId, true, localPath + cover_image_suffix, partType)
@@ -189,10 +189,12 @@ expressServer.get('/file', async (req, res) => {
   res.setHeader('Content-Type', contentType)
   res.setHeader('Access-Control-Allow-Origin', '*')
   fs.createReadStream(localPath).pipe(res)
+  return
 })
 //从服务器上下载文件
 const downFile = (fileId, showCover, savePath, partType) => {
   showCover = showCover + ''
+  console.log('showCover:', showCover)
   let url = `${getDomin()}/api/chat/downloadFile`
   const token = store.getUserData('token')
   return new Promise((resolve) => {
@@ -207,7 +209,7 @@ const downFile = (fileId, showCover, savePath, partType) => {
       let response = await axios.post(url, { fileId, showCover }, config)
       const folder = savePath.substring(0, savePath.lastIndexOf('/'))
       // console.log('folder:', folder)
-      mkdirs(folder)
+      await mkdirs(folder)
       let writeStream = fs.createWriteStream(savePath)
       // console.log(savePath)
       if (response.headers['content-type'] === 'application/json') {

@@ -15,6 +15,11 @@ const router = createRouter({
       component: () => import('@/views/login.vue')
     },
     {
+      path: '/showMedia',
+      name: '展示页面',
+      component: () => import('@/views/show/showMedia.vue')
+    },
+    {
       path: '/main',
       name: '聊天主页面',
       component: () => import('@/views/main.vue'),

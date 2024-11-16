@@ -47,7 +47,11 @@
             <template
               v-if="data.messageType === 1 || data.messageType === 2 || data.messageType === 5"
             >
-              <ChatMessage :data="data" :current-chat-session="currentChatSession"></ChatMessage>
+              <ChatMessage
+                :data="data"
+                :current-chat-session="currentChatSession"
+                @show-media-detail="showMediaDetailHandle"
+              ></ChatMessage>
             </template>
           </div>
         </div>
@@ -55,6 +59,9 @@
           :current-chat-session="currentChatSession"
           @send-message4-local="sendMessage4LocalHandle"
         ></MessageSend>
+      </div>
+      <div v-show="Object.keys(currentChatSession).length == 0">
+        <Blank></Blank>
       </div>
     </template>
   </Layout>
@@ -70,6 +77,7 @@ import { getCurrentInstance } from 'vue'
 import WinOp from '../../components/WinOp.vue'
 import MessageSend from './MessageSend.vue'
 import ChatMessage from './ChatMessage.vue'
+import Blank from '../../components/Blank.vue'
 const { proxy } = getCurrentInstance()
 const searchKey = ref('')
 const search = () => {
@@ -91,6 +99,13 @@ const onLoadSessionData = () => {
 const onReceiveMessage = () => {
   window.ipcRenderer.on('receiveMessage', (e, message) => {
     // console.log('receiveMessage', message)
+    if (message.messageType == 6) {
+      const localMessage = messageList.value.find((item) => item.messageId == message.messageId)
+      if (localMessage != null) {
+        localMessage.status = 1
+      }
+      return
+    }
     let curSession = chatSessionList.value.find((item) => item.sessionId == message.sessionId)
     if (curSession == null) {
       chatSessionList.value.push(message.extendData)
@@ -251,10 +266,34 @@ const gotoBottom = () => {
 
 //发送视频等媒体消息成功后的回调
 const onAddLocalMessageCallback = () => {
-  window.ipcRenderer.on('addLocalMessageCallback', (e, { status, messageId }) => {
+  window.ipcRenderer.on('addLocalMessageCallback', (e, { messageId, status }) => {
     const findMessage = messageList.value.find((item) => item.messageId == messageId)
     if (findMessage != null) {
       findMessage.status = status
+    }
+  })
+}
+
+//显示媒体详情
+const showMediaDetailHandle = (messageId) => {
+  let showFlieList = messageList.value.filter((item) => item.messageType == 5)
+  showFlieList = showFlieList.map((item) => {
+    return {
+      partType: 'chat',
+      fileId: item.messageId,
+      fileType: item.fileType,
+      fileName: item.fileName,
+      fileSize: item.fileSize,
+      forceGet: true
+    }
+  })
+  window.ipcRenderer.send('newWindow', {
+    windowId: 'media',
+    title: '图片查看',
+    path: '/showMedia',
+    data: {
+      currentFileId: messageId,
+      fileList: showFlieList
     }
   })
 }

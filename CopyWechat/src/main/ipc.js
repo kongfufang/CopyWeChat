@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 import store from './store'
 import { initWs } from './wsClient'
 import { addUserSetting } from './db/UserSettingModel'
@@ -11,7 +11,12 @@ import { delChatSession } from './db/ChatSessionUserModel'
 import { topChatSession } from './db/ChatSessionUserModel'
 import { selectChatMessageList, saveMessage, updateMessage } from './db/ChatMessageModel'
 import { createCover, saveMessage2Local } from './file'
+import { delWindow, getWindow, saveWindow } from './WindowProxy'
+import { join } from 'path'
+import icon from '../../resources/icon.png?asset'
+import { is } from '@electron-toolkit/utils'
 //登录后的操作
+const NODE_ENV = process.env.NODE_ENV
 const onLoginorRegister = (callback) => {
   ipcMain.on('LoginorRegister', (e, IsLogin) => {
     // console.log('收到渲染进程:', IsLogin)
@@ -113,6 +118,65 @@ const OnCreateCover = () => {
   })
 }
 
+const onOpenNewWindow = () => {
+  ipcMain.on('newWindow', async (e, config) => {
+    openWindow(config)
+  })
+}
+
+const openWindow = ({ windowId, title, path, width, height, data }) => {
+  title = title || 'CopyWeChat'
+  width = width || '960'
+  height = height || '970'
+  let newWindow = getWindow(windowId)
+  if (!newWindow) {
+    newWindow = new BrowserWindow({
+      icon: icon,
+      width: width,
+      height: height,
+      fullscreenable: false,
+      fullscreen: false,
+      maximizable: false,
+      autoHideMenuBar: true,
+      titleBarStyle: 'hidden',
+      transparent: true,
+      resizable: false,
+      frame: true,
+      hasShadow: false,
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.js'),
+        sandbox: false,
+        contextIsolation: false //关闭隔离后才能实现渲染进程与主进程通信
+      }
+    })
+    saveWindow(windowId, newWindow)
+    newWindow.setMinimumSize(600, 480)
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      newWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/index.html#${path}`)
+    } else {
+      newWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: `${path}` })
+    }
+    if (NODE_ENV === 'development') {
+      newWindow.webContents.openDevTools()
+    }
+    newWindow.on('ready-to-show', () => {
+      newWindow.show()
+      newWindow.setTitle(title)
+    })
+    newWindow.once('show', () => {
+      setTimeout(() => {
+        newWindow.webContents.send('pageInitData', data)
+      }, 500)
+    })
+    newWindow.on('close', () => {
+      delWindow(windowId)
+    })
+  } else {
+    newWindow.show()
+    newWindow.setSkipTaskbar(false)
+    newWindow.webContents.send('pageInitData', data)
+  }
+}
 export {
   onLoginorRegister,
   onOpenChat,
@@ -125,5 +189,6 @@ export {
   onloadChatMessage,
   onAddLocalMessage,
   onSetSessionSelect,
-  OnCreateCover
+  OnCreateCover,
+  onOpenNewWindow
 }

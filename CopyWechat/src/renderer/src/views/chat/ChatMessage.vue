@@ -11,10 +11,14 @@
       <template v-else>
         <div v-if="data.messageType != 5" class="content" v-text="data.messageContent"></div>
         <div v-if="data.fileType == 0" class="content">
-          <chatMessageImage :data="data"></chatMessageImage>
+          <chatMessageImage :data="data" @click="showMediaDetail"></chatMessageImage>
         </div>
-        <div v-if="data.fileType == 1" class="content">文件消息</div>
-        <div v-if="data.fileType == 2" class="content">其他消息</div>
+        <div v-if="data.fileType == 1" class="content">
+          <chatMessageVedio :data="data" @click="showMediaDetail"></chatMessageVedio>
+        </div>
+        <div v-if="data.fileType == 2" class="content">
+          <chatMessageFile :data="data" @click="showMediaDetail"></chatMessageFile>
+        </div>
       </template>
     </div>
     <Avatar :user-id="userInfoStore.getUserInfo().userId"></Avatar>
@@ -38,9 +42,15 @@
       </div>
       <template v-else>
         <div v-if="data.messageType != 5" class="content" v-text="data.messageContent"></div>
-        <div v-if="data.fileType == 0" class="content">图片消息</div>
-        <div v-if="data.fileType == 1" class="content">文件消息</div>
-        <div v-if="data.fileType == 2" class="content">其他消息</div>
+        <div v-if="data.fileType == 0" class="content">
+          <chatMessageImage :data="data" @click="showMediaDetail"></chatMessageImage>
+        </div>
+        <div v-if="data.fileType == 1" class="content">
+          <chatMessageVedio :data="data" @click="showMediaDetail"></chatMessageVedio>
+        </div>
+        <div v-if="data.fileType == 2" class="content">
+          <chatMessageFile :data="data" @click="showMediaDetail"></chatMessageFile>
+        </div>
       </template>
     </div>
   </div>
@@ -50,6 +60,8 @@
 import Avatar from '../../components/Avatar.vue'
 import { useUserInfoStore } from '../../store/userInfoStore'
 import chatMessageImage from './chatMessageImage.vue'
+import chatMessageVedio from './chatMessageVedio.vue'
+import chatMessageFile from './chatMessageFile.vue'
 const userInfoStore = useUserInfoStore()
 const props = defineProps({
   data: {
@@ -61,6 +73,14 @@ const props = defineProps({
     default: () => {}
   }
 })
+
+const emit = defineEmits(['showMediaDetail'])
+const showMediaDetail = () => {
+  if (props.data.status == 0) {
+    return
+  }
+  emit('showMediaDetail', props.data.messageId)
+}
 </script>
 
 <style lang="scss" scoped>

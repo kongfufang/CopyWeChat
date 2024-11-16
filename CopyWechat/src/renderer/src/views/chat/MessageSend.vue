@@ -205,6 +205,17 @@ const uploadFile = (file) => {
   uploadFileDo(file.file)
   uploadRef.value.clearFiles()
 }
+
+//管理表情包
+const sendEmoji = (emoji) => {
+  messageContent.value += emoji
+  showEmojiPopover.value = false
+}
+const openPopover = () => {}
+const closePopover = () => {}
+const showEmojiPopoverHandle = () => {
+  showEmojiPopover.value = true
+}
 </script>
 
 <style lang="scss" scoped>
@@ -262,6 +273,7 @@ const uploadFile = (file) => {
 }
 .emoji-list {
   .emoji-item {
+    cursor: pointer;
     float: left;
     font-size: 23px;
   }

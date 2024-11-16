@@ -7,7 +7,7 @@
     <ShowLocalImage
       :width="width"
       :file-id="userId"
-      :force-get="true"
+      :force-get="avatarUpdateStore.getForceReload(userId)"
       :file-type="0"
     ></ShowLocalImage>
   </div>
@@ -15,6 +15,8 @@
 
 <script setup>
 import ShowLocalImage from './ShowLocalImage.vue'
+import { useAvatarUpdateStore } from '../store/AvatarUpdateStore'
+const avatarUpdateStore = useAvatarUpdateStore()
 const props = defineProps({
   width: {
     type: Number,

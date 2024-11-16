@@ -10,7 +10,7 @@ import {
 import { delChatSession } from './db/ChatSessionUserModel'
 import { topChatSession } from './db/ChatSessionUserModel'
 import { selectChatMessageList, saveMessage, updateMessage } from './db/ChatMessageModel'
-import { saveMessage2Local } from './file'
+import { createCover, saveMessage2Local } from './file'
 //登录后的操作
 const onLoginorRegister = (callback) => {
   ipcMain.on('LoginorRegister', (e, IsLogin) => {
@@ -106,6 +106,13 @@ const onSetSessionSelect = () => {
   })
 }
 
+const OnCreateCover = () => {
+  ipcMain.on('createCover', async (e, localFilePath) => {
+    const stream = await createCover(localFilePath)
+    e.sender.send('createCoverCallback', stream)
+  })
+}
+
 export {
   onLoginorRegister,
   onOpenChat,
@@ -117,5 +124,6 @@ export {
   onTopChatSession,
   onloadChatMessage,
   onAddLocalMessage,
-  onSetSessionSelect
+  onSetSessionSelect,
+  OnCreateCover
 }

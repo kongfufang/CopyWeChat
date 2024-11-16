@@ -231,4 +231,23 @@ const downFile = (fileId, showCover, savePath, partType) => {
   })
 }
 
-export { saveMessage2Local, startLocalServer, closeLocalServer }
+const createCover = (filePath) => {
+  return new Promise((resolve) => {
+    const startFunction = async () => {
+      let ffmpegPath = getFFmpegPath()
+      let avatarPath = await getLocalFilePath('avatar', false, store.getUserId() + '_temp')
+      let command = `"${ffmpegPath}" -i "${filePath}" "${avatarPath}" -y` //生成缩略图
+      await execCommand(command)
+      let coverPath = await getLocalFilePath('avatar', false, store.getUserId() + '_temp_cover')
+      command = `"${ffmpegPath}" -i "${avatarPath}" -y -vframes 1 -vf "scale='min(170,iw*min(170/iw,170/ih))':'min(170,ih*min(170/iw,170/ih))'" "${coverPath}"`
+      await execCommand(command)
+      resolve({
+        avatarStream: fs.readFileSync(avatarPath),
+        coverStream: fs.readFileSync(coverPath)
+      })
+    }
+    startFunction()
+  })
+}
+
+export { saveMessage2Local, startLocalServer, closeLocalServer, createCover }

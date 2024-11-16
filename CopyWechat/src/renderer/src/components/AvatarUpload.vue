@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import ShowLocalImage from './ShowLocalImage.vue'
 
 const props = defineProps({
@@ -49,6 +49,31 @@ const props = defineProps({
 //头像预览功能
 const preview = computed(() => {
   return props.modelValue instanceof File
+})
+
+const uploadImage = async (file) => {
+  file = file.file
+  window.ipcRenderer.send('createCover', file.path)
+}
+const emit = defineEmits(['coverFile'])
+const localFile = ref(null)
+onMounted(() => {
+  window.ipcRenderer.on('createCoverCallback', (e, { avatarStream, coverStream }) => {
+    const coverBlob = new Blob([coverStream], { type: 'image/png' })
+    const coverFile = new File([coverBlob], 'cover.png')
+    let img = new FileReader()
+    img.readAsDataURL(coverFile)
+    img.onload = ({ target }) => {
+      localFile.value = target.result
+    }
+    const avatarBlob = new Blob([avatarStream], { type: 'image/png' })
+    const avatarFile = new File([avatarBlob], 'avatar.png')
+    emit('coverFile', { avatarFile, coverFile })
+  })
+})
+
+onUnmounted(() => {
+  window.ipcRenderer.removeAllListeners('createCoverCallback')
 })
 </script>
 

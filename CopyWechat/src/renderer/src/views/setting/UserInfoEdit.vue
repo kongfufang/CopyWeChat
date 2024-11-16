@@ -50,6 +50,8 @@ import { computed, ref, getCurrentInstance, reactive } from 'vue'
 import AvatarUpload from '../../components/AvatarUpload.vue'
 import AreaSelect from './AreaSelect.vue'
 import { useUserInfoStore } from '../../store/userInfoStore'
+import { useAvatarUpdateStore } from '../../store/AvatarUpdateStore'
+const avatarUpdateStore = useAvatarUpdateStore()
 const userInfoStore = useUserInfoStore()
 const { proxy } = getCurrentInstance()
 const formDataRef = ref(null)
@@ -76,7 +78,7 @@ const formData = computed(() => {
 //保存头像
 const saveCover = ({ avatarFile, coverFile }) => {
   formData.value.avatarFile = avatarFile
-  formData.value.coverFile = coverFile
+  formData.value.avatarCover = coverFile
 }
 //进行表单验证后提交个人信息
 const emit = defineEmits(['callback'])
@@ -93,6 +95,7 @@ const saveUserInfo = () => {
       params.areaCode = params.area.areaCode.join(',')
       delete params.area
     }
+    avatarUpdateStore.setForceReload(userInfoStore.getUserInfo().userId, false)
     //todo 强制刷新头像
     let result = await proxy.Request({
       url: proxy.api.saveUserInfo,
@@ -104,6 +107,7 @@ const saveUserInfo = () => {
     }
     proxy.message.success('保存成功')
     userInfoStore.setUserInfo(result)
+    avatarUpdateStore.setForceReload(userInfoStore.getUserInfo().userId, true)
     emit('callback')
   })
 }

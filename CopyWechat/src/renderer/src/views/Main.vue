@@ -2,7 +2,9 @@
   <div class="main">
     <div class="left-sider">
       <!-- 放置头像 -->
-      <div></div>
+      <div>
+        <Avatar :user-id="userInfoStore.getUserInfo().userId" :width="35" :show-detail="false" />
+      </div>
       <!-- 放置菜单上 -->
       <div class="menu-list">
         <!-- 在 Vue 中，:class 是一种动态绑定 class 的方式，它允许根据数据动态添加、删除或修改元素的 class。 -->
@@ -46,6 +48,7 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserInfoStore } from '../store/userInfoStore'
 import { useGlobalInfoStore } from '../store/GlobalInfoStore'
+import Avatar from '../components/Avatar.vue'
 const globalInfoStore = useGlobalInfoStore()
 const userInfoStore = useUserInfoStore()
 const router = useRouter()

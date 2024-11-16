@@ -4,7 +4,7 @@
       v-if="userId == 'Urobot'"
       :user-id="userId"
       :width="width"
-      :show-detail="false"
+      :show-detail="showDetail"
       :border-radius="borderRadius"
     ></AvatarBase>
     <el-popover
@@ -22,7 +22,7 @@
         <AvatarBase
           :user-id="userId"
           :width="width"
-          :show-detail="false"
+          :show-detail="showDetail"
           :border-radius="borderRadius"
         ></AvatarBase>
       </template>
@@ -63,6 +63,10 @@ const props = defineProps({
   groupId: {
     type: Boolean,
     default: false
+  },
+  showDetail: {
+    type: Boolean,
+    default: true
   }
 })
 //点击人物头像获取相关用户信息

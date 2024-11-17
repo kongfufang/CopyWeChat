@@ -10,7 +10,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useGlobalInfoStore } from '../store/GlobalInfoStore'
 const globalInfoStore = useGlobalInfoStore()
 //传进来参数表示显示那种类型的图片
@@ -46,9 +46,6 @@ const serverUrl = computed(() => {
   let serverPort = globalInfoStore.getGlobalInfo('serverPort')
 
   return `http://127.0.0.1:${serverPort}/file?fileId=${props.fileId}&partType=${props.partType}&fileType=${props.fileType}&showCover=true&forceGet=${props.forceGet}&${new Date().getTime()}`
-})
-onMounted(() => {
-  console.log('serverUrl', serverUrl.value)
 })
 </script>
 

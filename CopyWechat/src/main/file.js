@@ -3,7 +3,7 @@ const fse = require('fs-extra')
 const path = require('path')
 const { exec } = require('child_process') //引入子进程模块
 const NODE_ENV = process.env.NODE_ENV
-const { app, shell, ipcMain } = require('electron')
+const { app, dialog } = require('electron')
 const FormData = require('form-data')
 const axios = require('axios')
 import store from './store'
@@ -55,6 +55,12 @@ const getLocalFilePath = (partType, showCover, fileId) => {
         let fileSuffix = messageInfo.fileName
         fileSuffix = fileSuffix.substring(fileSuffix.lastIndexOf('.'))
         localPath = localFileFolder + '/' + fileId + fileSuffix
+      } else if (partType == 'tmp') {
+        localFileFolder = localFileFolder + '/tmp/'
+        if (!fs.existsSync(localFileFolder)) {
+          mkdirs(localFileFolder)
+        }
+        localPath = localFileFolder + '/' + fileId
       }
       if (showCover) {
         localPath = localPath + cover_image_suffix
@@ -177,7 +183,7 @@ expressServer.get('/file', async (req, res) => {
   // console.log('fileId:', fileId)
   showCover = showCover == undefined ? false : Boolean(showCover)
   const localPath = await getLocalFilePath(partType, showCover, fileId)
-  console.log('localPath:', localPath)
+  // console.log('localPath:', localPath)
   if (!fs.existsSync(localPath) || forceGet == 'true') {
     if (forceGet == 'true' && partType == 'avatar') {
       await downFile(fileId, true, localPath + cover_image_suffix, partType)
@@ -188,7 +194,36 @@ expressServer.get('/file', async (req, res) => {
   let contentType = FILE_TYPE_CONTENT_TYPE[fileType] + fileSuffix
   res.setHeader('Content-Type', contentType)
   res.setHeader('Access-Control-Allow-Origin', '*')
-  fs.createReadStream(localPath).pipe(res)
+  if (showCover || fileType != 1) {
+    fs.createReadStream(localPath).pipe(res)
+    return
+  }
+  let stat = fs.statSync(localPath) //可以获取文件的大小、创建时间等信息，也可以用来判断文件是否存在
+  let fileSize = stat.size
+  let range = req.headers.range
+  if (range) {
+    let parts = range.replace(/bytes=/, '').split('-')
+    let start = parseInt(parts[0], 10)
+    let end = parts[1] ? parseInt(parts[1], 10) : start + 999999
+    end = end > fileSize - 1 ? fileSize - 1 : end
+    let chunksize = end - start + 1
+    let stream = fs.createReadStream(localPath, { start, end })
+    let head = {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': 'video/mp4'
+    }
+    res.writeHead(206, head)
+    stream.pipe(res)
+  } else {
+    let head = {
+      'Content-Length': fileSize,
+      'Content-Type': 'video/mp4'
+    }
+    res.writeHead(200, head)
+    fs.createReadStream(localPath).pipe(res)
+  }
   return
 })
 //从服务器上下载文件
@@ -232,7 +267,7 @@ const downFile = (fileId, showCover, savePath, partType) => {
     startFunction()
   })
 }
-
+//创建头像和头像缩略图
 const createCover = (filePath) => {
   return new Promise((resolve) => {
     const startFunction = async () => {
@@ -252,4 +287,47 @@ const createCover = (filePath) => {
   })
 }
 
-export { saveMessage2Local, startLocalServer, closeLocalServer, createCover }
+const saveAs = async ({ partType, fileId }) => {
+  let fileName = ''
+  if (partType == 'avatar') {
+    fileName = fileId + image_suffix
+  } else if (partType == 'chat') {
+    let messageInfo = await selectByMessageId(fileId)
+    fileName = messageInfo.fileName
+  }
+
+  const localPath = await getLocalFilePath(partType, false, fileId)
+  const options = {
+    title: '保存文件',
+    defaultPath: fileName
+  }
+  let result = await dialog.showSaveDialog(options)
+  console.log('result:', result)
+
+  if (result.canceled || !result.filePath) return
+  const filePath = result.filePath
+  console.log('filePath:', filePath)
+  console.log('localPath:', localPath)
+  fs.copyFileSync(localPath, filePath)
+}
+//将图片保存到某个本地路径下
+const saveClipboardFile = async (data) => {
+  const fileSuffix = data.name.substring(data.name.lastIndexOf('.'))
+  const filePath = await getLocalFilePath('tmp', false, 'tmp' + fileSuffix)
+  let byteArray = data.byteArray
+  let buffer = Buffer.from(byteArray)
+  fs.writeFileSync(filePath, buffer)
+  return {
+    size: buffer.length,
+    name: data.name,
+    path: filePath
+  }
+}
+export {
+  saveMessage2Local,
+  startLocalServer,
+  closeLocalServer,
+  createCover,
+  saveAs,
+  saveClipboardFile
+}

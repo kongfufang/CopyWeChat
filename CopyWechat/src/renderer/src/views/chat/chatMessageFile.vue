@@ -12,16 +12,13 @@
 </template>
 
 <script setup>
-import { getCurrentInstance, onMounted } from 'vue'
+import { getCurrentInstance } from 'vue'
 const { proxy } = getCurrentInstance()
 const props = defineProps({
   data: {
     type: Object,
     required: true
   }
-})
-onMounted(() => {
-  console.log('data', props.data)
 })
 </script>
 

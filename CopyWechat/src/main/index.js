@@ -15,7 +15,9 @@ import {
   onAddLocalMessage,
   onSetSessionSelect,
   OnCreateCover,
-  onOpenNewWindow
+  onOpenNewWindow,
+  onSaveAs,
+  onsaveClipboardFile
 } from './ipc'
 import { saveWindow } from './WindowProxy'
 
@@ -165,6 +167,10 @@ function createWindow() {
   OnCreateCover()
   //点击图片/视频进行预览
   onOpenNewWindow()
+  //点击图片/视频进行保存
+  onSaveAs()
+  //截图上传功能
+  onsaveClipboardFile()
 }
 
 // This method will be called when Electron has finished

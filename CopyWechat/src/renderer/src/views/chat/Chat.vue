@@ -39,11 +39,31 @@
       <div v-show="Object.keys(currentChatSession).length > 0" class="chat-panel">
         <div id="message-panel" class="message-panel">
           <div
-            v-for="data in messageList"
+            v-for="(data, index) in messageList"
             :id="'message' + messageId"
             :key="data.sessionId"
             class="message-item"
           >
+            <!-- 展示聊天时候的时间 -->
+            <template
+              v-if="
+                index > 1 &&
+                data.sendTime - messageList[index - 1].sendTime > 300000 &&
+                (data.messageType == 2 || data.messageType == 5)
+              "
+              ><ChatMessageTime :data="data"></ChatMessageTime
+            ></template>
+            <!-- 展示系统消息 1:添加好友成功 3：群创建成功 9：好友加入群聊 11：退出群聊 12：被踢出群聊-->
+            <template
+              v-if="
+                data.messageType == 1 ||
+                data.messageType == 3 ||
+                data.messageType == 9 ||
+                data.messageType == 8 ||
+                data.messageType == 11 ||
+                data.messageType == 12
+              "
+            ></template>
             <template
               v-if="data.messageType === 1 || data.messageType === 2 || data.messageType === 5"
             >
@@ -78,6 +98,7 @@ import WinOp from '../../components/WinOp.vue'
 import MessageSend from './MessageSend.vue'
 import ChatMessage from './ChatMessage.vue'
 import Blank from '../../components/Blank.vue'
+import ChatMessageTime from './ChatMessageTime.vue'
 const { proxy } = getCurrentInstance()
 const searchKey = ref('')
 const search = () => {

@@ -81,11 +81,13 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance } from 'vue'
+import { ref, getCurrentInstance, onMounted, onUnmounted } from 'vue'
 import emojiList from '../../Utils/Emoji'
 import { useUserInfoStore } from '../../store/userInfoStore'
 import SearchAdd from '../contact/SearchAdd.vue'
 import { getFileType } from '../../Utils/Constans'
+import { useSysSettingStore } from '../../store/SysSettingStore'
+const sysSettingStore = useSysSettingStore()
 const userInfoStore = useUserInfoStore()
 const activeEmoji = ref('人物')
 const messageContent = ref('')
@@ -127,6 +129,10 @@ const sendMessageDo = async (
   },
   cleanMsgContent
 ) => {
+  if (!checkMessage(messageObj.fileType, messageObj.fileSize, messageObj.fileName)) {
+    console.log('文件大小超过限制')
+    return
+  }
   if (messageObj.fileSize == 0) {
     proxy.confirm({
       message: `${messageObj.fileName}文件为空请重新选择`,
@@ -206,6 +212,77 @@ const uploadFile = (file) => {
   uploadRef.value.clearFiles()
 }
 
+//管理文件大小限制(调用)
+const checkMessage = (fileType, fileSize, fileName) => {
+  const SIZE_MB = 1024 * 1024
+  const settingAarry = Object.values(sysSettingStore.getSetting())
+  // console.log('settingAarry', settingAarry)
+  const fileSizeNumber = settingAarry[fileType]
+  if (fileSize > (fileSizeNumber + 10) * SIZE_MB) {
+    proxy.confirm({
+      message: `${fileName}文件大小超过限制${fileSizeNumber}MB`,
+      showCancelButton: false
+    })
+    return false
+  }
+  return true
+}
+//管理文件数量
+const fileLimits = 10
+const checkFileLimit = (files) => {
+  if (files.length > fileLimits) {
+    proxy.confirm({
+      message: `文件数量超过限制${fileLimits}个`,
+      showCancelButton: false
+    })
+    return false
+  }
+  return true
+}
+const fileExceed = (files) => {
+  checkFileLimit(files)
+}
+//拖入文件上传
+const dragOverHandle = (e) => {
+  e.preventDefault()
+}
+
+const dropHandle = (e) => {
+  e.preventDefault()
+  const files = e.dataTransfer.files
+  if (!checkFileLimit(files)) {
+    return
+  }
+  for (let i = 0; i < files.length; i++) {
+    uploadFileDo(files[i])
+  }
+}
+//粘贴文件上传
+const pastFile = (e) => {
+  let items = e.clipboardData && e.clipboardData.items //安全嵌套
+  for (let item of items) {
+    if (item.kind != 'file') {
+      console.log('出现非文件类型')
+      return
+    }
+    const fileData = {}
+    const file = item.getAsFile()
+    // console.log('file', file)
+    if (file.path != '') {
+      uploadFileDo(file)
+    } else {
+      const imageFile = new File([file], 'temp.png')
+      let fileReader = new FileReader()
+      fileReader.onload = function () {
+        const byteArray = new Uint8Array(this.result)
+        fileData.byteArray = byteArray
+        fileData.name = imageFile.name
+        window.ipcRenderer.send('saveClipboardFile', fileData)
+      }
+      fileReader.readAsArrayBuffer(imageFile)
+    }
+  }
+}
 //管理表情包
 const sendEmoji = (emoji) => {
   messageContent.value += emoji
@@ -216,6 +293,27 @@ const closePopover = () => {}
 const showEmojiPopoverHandle = () => {
   showEmojiPopover.value = true
 }
+
+onMounted(() => {
+  window.ipcRenderer.on('saveClipboardFileCallback', (e, file) => {
+    const fileType = 0
+    sendMessageDo(
+      {
+        messageContent: '[' + getFileType(fileType) + ']',
+        messageType: 5,
+        fileSize: file.size,
+        fileName: file.name,
+        fileType: fileType,
+        filePath: file.path
+      },
+      false
+    )
+  })
+})
+
+onUnmounted(() => {
+  window.ipcRenderer.removeAllListeners('saveClipboardFileCallback')
+})
 </script>
 
 <style lang="scss" scoped>

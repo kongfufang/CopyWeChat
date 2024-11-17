@@ -44,11 +44,14 @@
 
 <script setup>
 //基础数据
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, getCurrentInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserInfoStore } from '../store/userInfoStore'
 import { useGlobalInfoStore } from '../store/GlobalInfoStore'
 import Avatar from '../components/Avatar.vue'
+import { useSysSettingStore } from '../store/SysSettingStore'
+const sysSettingStore = useSysSettingStore()
+const { proxy } = getCurrentInstance()
 const globalInfoStore = useGlobalInfoStore()
 const userInfoStore = useUserInfoStore()
 const router = useRouter()
@@ -85,10 +88,22 @@ const changeType = (item) => {
   router.push(item.path)
 }
 
+//保存后台所需要的设置限制
+const getSysSetting = async () => {
+  let result = await proxy.Request({
+    url: proxy.api.getSysSetting
+  })
+  if (!result) {
+    return
+  }
+  // console.log('result', result)
+  sysSettingStore.setSetting(result)
+}
 onMounted(() => {
+  getSysSetting()
   getLoginInfo()
   window.ipcRenderer.on('getLocalStoreCallback', (event, serverPort) => {
-    console.log('serverPort', serverPort)
+    // console.log('serverPort', serverPort)
     globalInfoStore.setGlobalInfo('serverPort', serverPort)
   })
 })

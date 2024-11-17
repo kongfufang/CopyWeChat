@@ -23,6 +23,7 @@ const api = {
   getUserInfo: '/userInfo/getUserInfo', // 获取用户信息
   saveUserInfo: '/userInfo/saveUserInfo', // 保存用户信息
   updatePassword: '/userInfo/updatePassword', // 修改密码
-  sendMessage: '/chat/sendMessage' // 发送消息
+  sendMessage: '/chat/sendMessage', // 发送消息
+  getSysSetting: '/account/getSysSetting' // 获取系统设置
 }
 export default api

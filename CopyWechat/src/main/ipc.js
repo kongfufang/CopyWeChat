@@ -10,7 +10,7 @@ import {
 import { delChatSession } from './db/ChatSessionUserModel'
 import { topChatSession } from './db/ChatSessionUserModel'
 import { selectChatMessageList, saveMessage, updateMessage } from './db/ChatMessageModel'
-import { createCover, saveMessage2Local } from './file'
+import { createCover, saveAs, saveClipboardFile, saveMessage2Local } from './file'
 import { delWindow, getWindow, saveWindow } from './WindowProxy'
 import { join } from 'path'
 import icon from '../../resources/icon.png?asset'
@@ -128,6 +128,8 @@ const openWindow = ({ windowId, title, path, width, height, data }) => {
   title = title || 'CopyWeChat'
   width = width || '960'
   height = height || '970'
+  let localServerPort = store.getUserData('localServerPort')
+  data.localServerPort = localServerPort
   let newWindow = getWindow(windowId)
   if (!newWindow) {
     newWindow = new BrowserWindow({
@@ -177,6 +179,19 @@ const openWindow = ({ windowId, title, path, width, height, data }) => {
     newWindow.webContents.send('pageInitData', data)
   }
 }
+
+const onSaveAs = () => {
+  ipcMain.on('saveAs', (e, data) => {
+    saveAs(data)
+  })
+}
+//截图上传功能
+const onsaveClipboardFile = () => {
+  ipcMain.on('saveClipboardFile', async (e, data) => {
+    const result = await saveClipboardFile(data)
+    e.sender.send('saveClipboardFileCallback', result)
+  })
+}
 export {
   onLoginorRegister,
   onOpenChat,
@@ -190,5 +205,7 @@ export {
   onAddLocalMessage,
   onSetSessionSelect,
   OnCreateCover,
-  onOpenNewWindow
+  onOpenNewWindow,
+  onSaveAs,
+  onsaveClipboardFile
 }

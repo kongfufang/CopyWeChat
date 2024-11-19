@@ -4,17 +4,17 @@ import { insertOrIgnore, queryOne, run, update } from './ADB'
 const os = require('os')
 const useDir = os.homedir()
 //更新申请好友未读数量
-const updateContactNoReadCount = ({ userId, noRead }) => {
+const updateContactNoReadCount = ({ userId, noReadCount }) => {
   return new Promise((resolve) => {
     async function startFunction() {
       let sql = null
-      if (noRead) {
+      if (noReadCount) {
         sql = 'update user_setting set contact_no_read= contact_no_read+? where user_id=?'
       } else {
-        noRead = 0
+        noReadCount = 0
         sql = 'update user_setting set contact_no_read=? where user_id=?'
       }
-      await run(sql, [noRead, userId])
+      await run(sql, [noReadCount, userId])
       resolve()
     }
     startFunction()
@@ -58,4 +58,19 @@ const addUserSetting = async (userId, email) => {
   store.setUserData('localServerPort', resultServerPort)
   store.setUserData('localFileFolder', localFileFolder)
 }
-export { updateContactNoReadCount, addUserSetting }
+//查询好友申请未读数量
+const selectSettingInfo = async (userId) => {
+  let sql = 'select * from user_setting where user_id=?'
+  return queryOne(sql, [userId])
+}
+
+const updateSysSetting = (sysSetting) => {
+  const data = {
+    sysSetting
+  }
+  const paramData = {
+    userId: store.getUserId()
+  }
+  return update('user_setting', data, paramData)
+}
+export { updateContactNoReadCount, addUserSetting, selectSettingInfo, updateSysSetting }

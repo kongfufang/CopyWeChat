@@ -23,6 +23,7 @@
             >
               <div :class="['iconfont', sub.icon]" :style="{ background: sub.iconBgColor }"></div>
               <div class="test">{{ sub.name }}</div>
+              <Badge :count="messageCountStore.getCount(sub.countKey)" :top="3" :left="45"></Badge>
             </div>
             <template v-for="contact in item.contactData" :key="contact.contactId">
               <div
@@ -62,6 +63,9 @@ import WinOp from '../../components/WinOp.vue'
 import router from '../../router'
 import Avatar from '../../components/Avatar.vue'
 import { useContactStateStore } from '../../store/contactStateStore'
+import Badge from '../../components/Badge.vue'
+import { useMessageCountStore } from '../../store/MessageCountStore'
+const messageCountStore = useMessageCountStore()
 const contactStateStore = useContactStateStore()
 const { proxy } = getCurrentInstance()
 const route = useRoute()
@@ -128,6 +132,10 @@ const partJump = (item) => {
     rightTitle.value = item.name
   } else {
     rightTitle.value = ''
+  }
+  if (item.countKey) {
+    messageCountStore.setCount(item.countKey, 0, true)
+    window.ipcRenderer.send('updateContactNoReadCount')
   }
   router.push(item.path)
 }

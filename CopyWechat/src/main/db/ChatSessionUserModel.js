@@ -125,6 +125,17 @@ const saveOrUpdate4Message = (currentSessionId, sessionInfo) => {
     startFunction()
   })
 }
+
+const updateGroupName = (contactId, groupName) => {
+  const paramData = {
+    userId: store.getUserId(),
+    contactId
+  }
+  const sessionInfo = {
+    contactName: groupName
+  }
+  return update('chat_session_user', sessionInfo, paramData)
+}
 export {
   saveOrUpdateChatSessionBatch4Init,
   updateNoReadCount,
@@ -134,5 +145,6 @@ export {
   updateSessionInfo4Message,
   readAll,
   saveOrUpdate4Message,
-  selectUserSessionByContactId
+  selectUserSessionByContactId,
+  updateGroupName
 }

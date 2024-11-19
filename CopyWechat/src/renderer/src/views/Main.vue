@@ -15,7 +15,9 @@
             @click="changeType(item)"
           >
             <!-- 聊天消息提示区域 -->
-            <template v-if="item.name == 'chat'"></template>
+            <template v-if="item.name == 'chat' || item.name == 'contact'">
+              <Badge :count="messageCountStore.getCount(item.countKey)" :top="3" :left="15"></Badge>
+            </template>
           </div>
         </template>
       </div>
@@ -50,6 +52,8 @@ import { useUserInfoStore } from '../store/userInfoStore'
 import { useGlobalInfoStore } from '../store/GlobalInfoStore'
 import Avatar from '../components/Avatar.vue'
 import { useSysSettingStore } from '../store/SysSettingStore'
+import { useMessageCountStore } from '../store/MessageCountStore'
+const messageCountStore = useMessageCountStore()
 const sysSettingStore = useSysSettingStore()
 const { proxy } = getCurrentInstance()
 const globalInfoStore = useGlobalInfoStore()
@@ -105,6 +109,9 @@ onMounted(() => {
   window.ipcRenderer.on('getLocalStoreCallback', (event, serverPort) => {
     // console.log('serverPort', serverPort)
     globalInfoStore.setGlobalInfo('serverPort', serverPort)
+  })
+  window.ipcRenderer.on('reLoginCallback', () => {
+    router.push('/login')
   })
 })
 </script>

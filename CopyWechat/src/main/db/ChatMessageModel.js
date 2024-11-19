@@ -87,4 +87,5 @@ const selectByMessageId = (messageId) => {
   const params = [messageId, store.getUserId()]
   return queryOne(sql, params)
 }
+
 export { saveMessageBatch, selectChatMessageList, saveMessage, updateMessage, selectByMessageId }

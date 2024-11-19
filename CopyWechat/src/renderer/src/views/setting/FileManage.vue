@@ -21,17 +21,40 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import ContentPanel from '../../components/ContentPanel.vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 const formData = ref({})
 
 //todo: 从数据库中获取文件管理的路径
+const copying = ref(false)
+const getSetting = () => {
+  window.ipcRenderer.send('getSysSetting')
+}
 const changeFolder = () => {
-  console.log('changeFolder')
+  window.ipcRenderer.send('changeLocalFolder')
 }
 const openLocalFolder = () => {
-  console.log('openLocalFolder')
+  window.ipcRenderer.send('openLocalFolder')
 }
+
+onMounted(() => {
+  getSetting()
+  window.ipcRenderer.on('getSysSettingCallback', (e, sysSetting) => {
+    copying.value = false
+    sysSetting = JSON.parse(sysSetting)
+    formData.value = {
+      sysSetting: sysSetting.localFileFolder
+    }
+  })
+  window.ipcRenderer.on('copyingCallback', () => {
+    copying.value = true
+  })
+})
+
+onUnmounted(() => {
+  window.ipcRenderer.removeAllListeners('getSysSettingCallback')
+  window.ipcRenderer.removeAllListeners('copyingCallback')
+})
 </script>
 
 <style lang="scss" scoped>

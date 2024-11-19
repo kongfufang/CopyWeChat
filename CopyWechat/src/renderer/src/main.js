@@ -20,6 +20,7 @@ import UserBaseInfo from './components/UserBaseInfo.vue'
 import Dailog from './components/Dailog.vue'
 import AvatarUpload from './components/AvatarUpload.vue'
 import confirm from './Utils/Confirm'
+import Badge from './components/Badge.vue'
 const app = createApp(App)
 app.config.globalProperties.Utils = Utils
 app.config.globalProperties.Verify = Verify
@@ -27,6 +28,7 @@ app.config.globalProperties.message = message
 app.config.globalProperties.api = api
 app.config.globalProperties.Request = Request
 app.config.globalProperties.confirm = confirm
+app.component('Badge', Badge)
 app.component('ShowLocalImage', ShowLocalImage)
 app.component('WinOp', WinOp)
 app.component('Layout', Layout)

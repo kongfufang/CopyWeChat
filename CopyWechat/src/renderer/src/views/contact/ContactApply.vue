@@ -42,9 +42,11 @@
 <script setup>
 import Avatar from '../../components/Avatar.vue'
 import ContentPanel from '../../components/ContentPanel.vue'
-import { ref, getCurrentInstance } from 'vue'
+import { ref, getCurrentInstance, watch } from 'vue'
 import message from '../../Utils/Message'
 import { useContactStateStore } from '../../store/contactStateStore'
+import { useMessageCountStore } from '../../store/MessageCountStore'
+const messageCountStore = useMessageCountStore()
 const contactStateStore = useContactStateStore()
 const { proxy } = getCurrentInstance()
 //申请添加好友列表的请求
@@ -100,6 +102,19 @@ const dealWithApply = (applyId, contactType, status) => {
     }
   })
 }
+
+watch(
+  () => messageCountStore.messageCount.contactAppltCount,
+  (newVal) => {
+    if (newVal) {
+      pageNo = 0
+      loadApply()
+    }
+  },
+  {
+    immediate: true
+  }
+)
 </script>
 
 <style lang="scss" scoped>

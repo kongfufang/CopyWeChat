@@ -14,6 +14,7 @@
 <script setup>
 import ContentPanel from '../../components/ContentPanel.vue'
 import config from '../../../../../package.json'
+
 const checkUpdate = () => {
   console.log('checkUpdate')
 }

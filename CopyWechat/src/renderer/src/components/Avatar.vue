@@ -28,8 +28,8 @@
       </template>
       <template #default>
         <div class="popover-user-panel">
-          <UserBaseInfo :user-info="userInfo"></UserBaseInfo>
-          <div class="op-btn">
+          <UserBaseInfo :user-info="userInfo" :show-area="true"></UserBaseInfo>
+          <div v-if="showDetail" class="op-btn">
             <el-button v-if="userInfo.contactStatus == 1" type="primary" @click="sendMessage"
               >发送消息</el-button
             >

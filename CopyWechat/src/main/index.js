@@ -17,7 +17,13 @@ import {
   OnCreateCover,
   onOpenNewWindow,
   onSaveAs,
-  onsaveClipboardFile
+  onsaveClipboardFile,
+  onLoadContactApply,
+  onUpdateContactNoReadCount,
+  onReLogin,
+  OnOpenLocalFolder,
+  onGetSysSetting,
+  onChangeLocalFolder
 } from './ipc'
 import { saveWindow } from './WindowProxy'
 
@@ -171,6 +177,24 @@ function createWindow() {
   onSaveAs()
   //截图上传功能
   onsaveClipboardFile()
+  //添加好友申请未读数量
+  onLoadContactApply()
+  //点击后清除联系人申请未读数量
+  onUpdateContactNoReadCount()
+  //重新上号
+  onReLogin(() => {
+    mainWindow.setResizable(true)
+    mainWindow.setMaximumSize(login_width, login_height)
+    mainWindow.setSize(login_width, login_height)
+    mainWindow.center()
+    mainWindow.setResizable(false)
+  })
+  //打开文件夹
+  OnOpenLocalFolder()
+  //给渲染进程发送系统设置信息
+  onGetSysSetting()
+  //修改文件路径
+  onChangeLocalFolder()
 }
 
 // This method will be called when Electron has finished

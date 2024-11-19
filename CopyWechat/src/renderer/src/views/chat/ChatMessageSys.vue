@@ -15,9 +15,12 @@ const props = defineProps({
 
 const dataMessage = computed(() => {
   const data = { ...props.data }
+  // console.log('data', data)
+
   if (data.messageType == 1) {
     data.messageContent = '成功添加好友，以下是打招呼的消息'
   }
+
   return data
 })
 </script>

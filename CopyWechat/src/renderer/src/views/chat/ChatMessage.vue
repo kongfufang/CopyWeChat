@@ -24,7 +24,7 @@
     <Avatar :user-id="userInfoStore.getUserInfo().userId"></Avatar>
   </div>
   <div v-else class="message-content-other">
-    <div class="user-avatar"><Avatar :user-id="currentChatSession.contactId"></Avatar></div>
+    <div class="user-avatar"><Avatar :user-id="data.sendUserId"></Avatar></div>
     <div
       :class="[
         'content-panel',
@@ -62,7 +62,7 @@ import { useUserInfoStore } from '../../store/userInfoStore'
 import chatMessageImage from './chatMessageImage.vue'
 import chatMessageVedio from './chatMessageVedio.vue'
 import chatMessageFile from './chatMessageFile.vue'
-import { onMounted } from 'vue'
+
 const userInfoStore = useUserInfoStore()
 const props = defineProps({
   data: {
@@ -74,9 +74,7 @@ const props = defineProps({
     default: () => {}
   }
 })
-onMounted(() => {
-  console.log('currentChatSession', props.currentChatSession)
-})
+
 const emit = defineEmits(['showMediaDetail'])
 const showMediaDetail = () => {
   if (props.data.status == 0) {

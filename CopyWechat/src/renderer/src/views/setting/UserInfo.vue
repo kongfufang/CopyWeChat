@@ -76,7 +76,18 @@ const callback = () => {
 }
 //退出登录
 const logout = () => {
-  console.log('退出登录')
+  proxy.confirm({
+    message: '是否退出登录?',
+    okfun: async () => {
+      window.ipcRenderer.send('reLogin')
+      let result = await proxy.Request({
+        url: proxy.api.logout
+      })
+      if (!result) {
+        return
+      }
+    }
+  })
 }
 </script>
 

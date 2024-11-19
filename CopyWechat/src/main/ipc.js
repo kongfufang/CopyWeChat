@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain } from 'electron'
 import store from './store'
-import { initWs } from './wsClient'
-import { addUserSetting } from './db/UserSettingModel'
+import { closeWs, initWs } from './wsClient'
+import { addUserSetting, selectSettingInfo, updateContactNoReadCount } from './db/UserSettingModel'
 import {
   readAll,
   selectUserSessionList,
@@ -10,7 +10,15 @@ import {
 import { delChatSession } from './db/ChatSessionUserModel'
 import { topChatSession } from './db/ChatSessionUserModel'
 import { selectChatMessageList, saveMessage, updateMessage } from './db/ChatMessageModel'
-import { createCover, saveAs, saveClipboardFile, saveMessage2Local } from './file'
+import {
+  changeLocalFolder,
+  closeLocalServer,
+  createCover,
+  openLocalFolder,
+  saveAs,
+  saveClipboardFile,
+  saveMessage2Local
+} from './file'
 import { delWindow, getWindow, saveWindow } from './WindowProxy'
 import { join } from 'path'
 import icon from '../../resources/icon.png?asset'
@@ -102,6 +110,7 @@ const onAddLocalMessage = () => {
 //点击某个会话时保存当前的会话id
 const onSetSessionSelect = () => {
   ipcMain.on('setSessionSelect', (e, { contactId, sessionId }) => {
+    // console.log(`当前会话id:${sessionId}`)
     if (sessionId) {
       store.setUserData('currentSessionId', sessionId)
       readAll(contactId)
@@ -192,6 +201,57 @@ const onsaveClipboardFile = () => {
     e.sender.send('saveClipboardFileCallback', result)
   })
 }
+//拿取联系人申请未读数量
+const onLoadContactApply = () => {
+  ipcMain.on('loadContactApply', async (e) => {
+    const userId = store.getUserId()
+    let result = await selectSettingInfo(userId)
+    let contactNoRead = 0
+    if (result != null) {
+      contactNoRead = result.contactNoRead
+    }
+    e.sender.send('loadContactApplyCallback', contactNoRead)
+  })
+}
+
+//点击后清除联系人申请未读数量
+const onUpdateContactNoReadCount = () => {
+  ipcMain.on('updateContactNoReadCount', async () => {
+    const userId = store.getUserId()
+    await updateContactNoReadCount(userId)
+  })
+}
+//重新上号
+const onReLogin = (callback) => {
+  ipcMain.on('reLogin', (e) => {
+    callback()
+    e.sender.send('reLoginCallback')
+    closeWs()
+    closeLocalServer()
+  })
+}
+
+//打开文件夹
+const OnOpenLocalFolder = () => {
+  ipcMain.on('openLocalFolder', () => {
+    openLocalFolder()
+  })
+}
+
+//发送设置信息
+const onGetSysSetting = () => {
+  ipcMain.on('getSysSetting', async (e) => {
+    let result = await selectSettingInfo(store.getUserId())
+    let sysSetting = result.sysSetting
+    e.sender.send('getSysSettingCallback', sysSetting)
+  })
+}
+//修改文件路径
+const onChangeLocalFolder = () => {
+  ipcMain.on('changeLocalFolder', async () => {
+    changeLocalFolder()
+  })
+}
 export {
   onLoginorRegister,
   onOpenChat,
@@ -207,5 +267,11 @@ export {
   OnCreateCover,
   onOpenNewWindow,
   onSaveAs,
-  onsaveClipboardFile
+  onsaveClipboardFile,
+  onLoadContactApply,
+  onUpdateContactNoReadCount,
+  onReLogin,
+  OnOpenLocalFolder,
+  onGetSysSetting,
+  onChangeLocalFolder
 }

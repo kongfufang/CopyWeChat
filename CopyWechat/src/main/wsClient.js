@@ -2,7 +2,8 @@ const WebSocket = require('ws')
 import store from './store'
 import {
   saveOrUpdateChatSessionBatch4Init,
-  selectUserSessionByContactId
+  selectUserSessionByContactId,
+  updateGroupName
 } from './db/ChatSessionUserModel'
 import { saveMessage, saveMessageBatch, updateMessage } from './db/ChatMessageModel'
 import { updateContactNoReadCount } from './db/UserSettingModel'
@@ -36,12 +37,12 @@ const createWs = () => {
     maxReconnectTimes = 5
   }
   ws.onmessage = async function (e) {
-    // console.log('ws客户端收到消息:', e.data)
+    console.log('ws客户端收到消息:', e.data)
     const message = JSON.parse(e.data)
     const messageType = message.messageType
     console.log('messageType:', messageType)
     switch (messageType) {
-      case 0:
+      case 0: {
         //处理三个表的数据
         await saveOrUpdateChatSessionBatch4Init(message.extendData.chatSessionList)
         await saveMessageBatch(message.extendData.chatMessageList)
@@ -51,14 +52,41 @@ const createWs = () => {
         })
         sender.send('receiveMessage', { messageType: message.messageType })
         break
+      }
+      case 4: {
+        //接收好友申请
+        // console.log('接收到好友申请消息:', message)
+        await updateContactNoReadCount({ userId: store.getUserId(), noReadCount: 1 })
+        sender.send('receiveMessage', { messageType: message.messageType })
+        break
+      }
       case 6: {
+        //文件上传成功后通知渲染进程修改状态读取
         updateMessage({ status: 1 }, { messageId: message.messageId })
         sender.send('receiveMessage', { message })
         break
       }
-      case 2:
+      case 10: {
+        //修改群昵称
+        await updateGroupName(message.contactId, message.extendData)
+        sender.send('receiveMessage', message)
+        break
+      }
+      case 7: {
+        //进行强制下线
+        sender.send('receiveMessage', message)
+        closeWs()
+        break
+      }
+      case 1: //添加好友成功
+      case 3: //创建群成功
+      case 8: //解散群聊
+      case 9: //好友加入群聊
+      case 11: //退出群聊
+      case 12: //踢出群聊
+      case 2: //普通消息
       case 5: {
-        console.log(111111111)
+        //图片/视频消息
         if (message.sendUserId === store.getUserId() && message.contactType === 1) {
           break
         }
@@ -72,6 +100,11 @@ const createWs = () => {
           }
           sessionInfo.lastReceiveTime = message.sendTime
         }
+        //群聊处理
+        if (messageType == 9 || messageType == 11 || messageType == 12) {
+          sessionInfo.memberCount = message.memberCount
+        }
+
         await saveOrUpdate4Message(store.getUserData('currentSessionId'), sessionInfo)
         await saveMessage(message)
 
@@ -123,4 +156,9 @@ const createWs = () => {
     // console.log('发送心跳')
   }, 5000)
 }
-export { initWs }
+
+const closeWs = () => {
+  needReconnect = false
+  ws.close()
+}
+export { initWs, closeWs }

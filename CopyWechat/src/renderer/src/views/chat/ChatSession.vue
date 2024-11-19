@@ -1,6 +1,7 @@
 <template>
   <div :class="['chat-session-item', currentSession ? 'active' : '']">
     <div v-if="data.contactType == 1" class="contact-tag">群</div>
+    <Badge :count="data.noReadCount" :top="2" :left="42"></Badge>
     <AvatarBase :user-id="data.contactId"></AvatarBase>
     <div class="user-info">
       <div class="user-name-panel">
@@ -15,7 +16,7 @@
 
 <script setup>
 import AvatarBase from '../../components/AvatarBase.vue'
-
+import Badge from '../../components/Badge.vue'
 import { getCurrentInstance } from 'vue'
 const { proxy } = getCurrentInstance()
 const props = defineProps({

@@ -40,7 +40,7 @@
         <div id="message-panel" class="message-panel">
           <div
             v-for="(data, index) in messageList"
-            :id="'message' + messageId"
+            :id="'message' + data.messageId"
             :key="data.sessionId"
             class="message-item"
           >
@@ -63,6 +63,7 @@
                 data.messageType == 11 ||
                 data.messageType == 12
               "
+              ><ChatMessageSys :data="data"></ChatMessageSys
             ></template>
             <template
               v-if="data.messageType === 1 || data.messageType === 2 || data.messageType === 5"
@@ -85,6 +86,10 @@
       </div>
     </template>
   </Layout>
+  <ChatGroupDetail
+    ref="chatGroupDetailRef"
+    @del-chat-session-callback="delChatSessionCallBack"
+  ></ChatGroupDetail>
   <WinOp></WinOp>
 </template>
 <script setup>
@@ -99,6 +104,12 @@ import MessageSend from './MessageSend.vue'
 import ChatMessage from './ChatMessage.vue'
 import Blank from '../../components/Blank.vue'
 import ChatMessageTime from './ChatMessageTime.vue'
+import { useAvatarUpdateStore } from '../../store/AvatarUpdateStore'
+import ChatGroupDetail from '../contact/ChatGroupDetail.vue'
+import ChatMessageSys from './ChatMessageSys.vue'
+import { useMessageCountStore } from '../../store/MessageCountStore'
+const messageCountStore = useMessageCountStore()
+const avatarUpdateStore = useAvatarUpdateStore()
 const { proxy } = getCurrentInstance()
 const searchKey = ref('')
 const search = () => {
@@ -112,6 +123,11 @@ const loadChatSession = () => {
 const chatSessionList = ref([])
 const onLoadSessionData = () => {
   window.ipcRenderer.on('loadSessionDataCallback', (e, dataList) => {
+    let noReadCount = 0
+    dataList.forEach((item) => {
+      noReadCount += item.noReadCount
+    })
+    messageCountStore.setCount('chatCount', noReadCount, true)
     sortChatSessionList(dataList)
     // console.log('loadSessionDataCallback', dataList)
     chatSessionList.value = dataList
@@ -120,6 +136,28 @@ const onLoadSessionData = () => {
 const onReceiveMessage = () => {
   window.ipcRenderer.on('receiveMessage', (e, message) => {
     // console.log('receiveMessage', message)
+    if (message.messageType == 4) {
+      loadContactApply()
+      return
+    }
+    if (message.messageType == 7) {
+      proxy.confirm({
+        message: '您已被管理员强制下线',
+        okfun: () => {
+          setTimeout(() => {
+            window.ipcRenderer.send('reLogin')
+          }, 200)
+        },
+        showCancelButton: false
+      })
+    }
+    if (message.messageType == 10) {
+      let curSession = chatSessionList.value.find((item) => item.contactId == message.contactId)
+      if (curSession != null) {
+        curSession.contactName = message.extendData
+      }
+      return
+    }
     if (message.messageType == 6) {
       const localMessage = messageList.value.find((item) => item.messageId == message.messageId)
       if (localMessage != null) {
@@ -135,7 +173,7 @@ const onReceiveMessage = () => {
     }
     sortChatSessionList(chatSessionList.value)
     if (message.sessionId != currentChatSession.value.sessionId) {
-      //处理气泡
+      messageCountStore.setCount('chatCount', 1, false)
     } else {
       Object.assign(currentChatSession.value, message.extendData)
       messageList.value.push(message)
@@ -155,7 +193,9 @@ const sortChatSessionList = (dataList) => {
 }
 //会话删除函数(调用)
 const delChatSessionList = (contactId) => {
-  chatSessionList.value = chatSessionList.value.filter((item) => item.contactId !== contactId)
+  setTimeout(() => {
+    chatSessionList.value = chatSessionList.value.filter((item) => item.contactId !== contactId)
+  }, 100)
 }
 //置顶函数，与主进程进行交互
 const setTop = (data) => {
@@ -200,7 +240,8 @@ const onLoadChatMessage = () => {
     // console.log(dataList)
     // console.log(totalPage)
     // console.log(pageNo)
-
+    const lastMessage = messageList.value[0]
+    console.log(lastMessage)
     messageList.value = dataList.concat(messageList.value)
     messageInfo.totalPage = totalPage
     messageInfo.pageNo = pageNo
@@ -209,19 +250,30 @@ const onLoadChatMessage = () => {
         dataList.length > 0 ? dataList[dataList.length - 1].messageId : null
       //滚动到底部
       gotoBottom()
+    } else {
+      nextTick(() => {
+        console.log('转到最后一条')
+        console.log(lastMessage.messageId)
+        document.querySelector('#message' + lastMessage.messageId).scrollIntoView()
+      })
     }
     // console.log(messageList.value)
   })
 }
 
 //点击后保存当前的会话Id
-const setSessionSelect = (contactId, sessionId) => {
+const setSessionSelect = ({ contactId, sessionId }) => {
   window.ipcRenderer.send('setSessionSelect', { contactId, sessionId })
 }
-
+let distanceBottom = 0
 //渲染相关消息记录(执行)
 const chatSessionClickHandle = (item) => {
+  distanceBottom = 0
   currentChatSession.value = Object.assign({}, item)
+
+  // console.log('currentChatSession', currentChatSession.value)
+  messageCountStore.setCount('chatCount', -item.noReadCount, false)
+  item.noReadCount = 0
   messageList.value = []
   messageInfo.maxMessageId = null
   messageInfo.noData = false
@@ -263,6 +315,7 @@ const onContextMenu = (data, e) => {
   })
 }
 //点击发送添加消息并立即更新关于自己的消息页面
+
 const sendMessage4LocalHandle = (messageObj) => {
   messageList.value.push(messageObj)
   const chatSession = chatSessionList.value.find((item) => item.sessionId == messageObj.sessionId)
@@ -275,6 +328,10 @@ const sendMessage4LocalHandle = (messageObj) => {
 }
 //发送消息后到达底部
 const gotoBottom = () => {
+  if (distanceBottom > 200) {
+    console.log('不用滚动到底部了')
+    return
+  }
   nextTick(() => {
     const items = document.querySelectorAll('.message-item')
     if (items.length > 0) {
@@ -299,13 +356,14 @@ const onAddLocalMessageCallback = () => {
 const showMediaDetailHandle = (messageId) => {
   let showFlieList = messageList.value.filter((item) => item.messageType == 5)
   showFlieList = showFlieList.map((item) => {
+    console.log('item::', item)
     return {
       partType: 'chat',
       fileId: item.messageId,
       fileType: item.fileType,
       fileName: item.fileName,
       fileSize: item.fileSize,
-      forceGet: true
+      forceGet: avatarUpdateStore.getForceReload(item.userId)
     }
   })
   window.ipcRenderer.send('newWindow', {
@@ -318,12 +376,46 @@ const showMediaDetailHandle = (messageId) => {
     }
   })
 }
+
+//显示群聊详情
+const chatGroupDetailRef = ref()
+const showGroupDetail = () => {
+  chatGroupDetailRef.value.show(currentChatSession.value.contactId)
+}
+
+//当退出群聊后的回调删除该聊天会话
+const delChatSessionCallBack = (contactId) => {
+  delChatSession(contactId)
+}
+
+//加载未读消息数
+const loadContactApply = () => {
+  window.ipcRenderer.send('loadContactApply')
+}
+const onLoadContactApply = () => {
+  window.ipcRenderer.on('loadContactApplyCallback', (e, contactNoRead) => {
+    messageCountStore.setCount('contactApplyCount', contactNoRead, true)
+  })
+}
 onMounted(() => {
+  onLoadContactApply()
   onReceiveMessage()
   onLoadSessionData()
   loadChatSession()
   onLoadChatMessage()
   onAddLocalMessageCallback()
+  loadContactApply()
+  nextTick(() => {
+    const messagePanel = document.querySelector('#message-panel')
+    messagePanel.addEventListener('scroll', (e) => {
+      const scrollTop = e.target.scrollTop
+      distanceBottom = e.target.scrollHeight - e.target.clientHeight - scrollTop
+      if (scrollTop == 0 && messageList.value.length > 0) {
+        loadChatMessage()
+      }
+    })
+  })
+  setSessionSelect({})
 })
 
 //页面结束删除监听
@@ -332,6 +424,7 @@ onUnmounted(() => {
   window.ipcRenderer.removeAllListeners('receiveMessage')
   window.ipcRenderer.removeAllListeners('loadChatMessageCallback')
   window.ipcRenderer.removeAllListeners('addLocalMessageCallback')
+  window.ipcRenderer.removeAllListeners('loadContactApplyCallback')
 })
 </script>
 

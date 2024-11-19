@@ -3,11 +3,13 @@ const fse = require('fs-extra')
 const path = require('path')
 const { exec } = require('child_process') //引入子进程模块
 const NODE_ENV = process.env.NODE_ENV
-const { app, dialog } = require('electron')
+const { app, dialog, shell } = require('electron')
 const FormData = require('form-data')
 const axios = require('axios')
 import store from './store'
 import { selectByMessageId } from './db/ChatMessageModel'
+import { selectSettingInfo, updateSysSetting } from './db/UserSettingModel'
+import { getWindow } from './WindowProxy'
 const moment = require('moment')
 moment.locale('zh-cn', {})
 const cover_image_suffix = '_cover.png'
@@ -323,11 +325,48 @@ const saveClipboardFile = async (data) => {
     path: filePath
   }
 }
+//打开文件夹
+const openLocalFolder = async () => {
+  let settingInfo = await selectSettingInfo(store.getUserId())
+  const sysSetting = JSON.parse(settingInfo.sysSetting)
+  const localFileFolder = sysSetting.localFileFolder
+  if (!fs.existsSync(localFileFolder)) {
+    mkdirs(localFileFolder)
+  }
+  shell.openPath('file:///' + localFileFolder)
+}
+
+//改变文件路径
+const changeLocalFolder = async () => {
+  let settingInfo = await selectSettingInfo(store.getUserId())
+  const sysSetting = JSON.parse(settingInfo.sysSetting)
+  let localFileFolder = sysSetting.localFileFolder
+  const options = {
+    properties: ['openDirectory'],
+    defaultPath: localFileFolder
+  }
+  let result = await dialog.showOpenDialog(options)
+  const newFileFolder = result.filePaths[0]
+  if (result.canceled || !result.filePaths) return
+  if (localFileFolder != newFileFolder) {
+    const userId = store.getUserId()
+    getWindow('main').webContents.send('copyingCallback')
+    await fse.copy(localFileFolder + '/' + userId, newFileFolder + '/' + userId)
+  }
+
+  sysSetting.localFileFolder = newFileFolder + '\\'
+  const sysSettingJson = JSON.stringify(sysSetting)
+  await updateSysSetting(sysSettingJson)
+  store.setUserData('localFileFolder', sysSetting.localFileFolder + store.getUserId())
+  getWindow('main').webContents.send('getSysSettingCallback', sysSetting)
+}
 export {
   saveMessage2Local,
   startLocalServer,
   closeLocalServer,
   createCover,
   saveAs,
-  saveClipboardFile
+  saveClipboardFile,
+  openLocalFolder,
+  changeLocalFolder
 }

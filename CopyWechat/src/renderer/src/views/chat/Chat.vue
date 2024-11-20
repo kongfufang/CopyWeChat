@@ -11,7 +11,7 @@
           </template>
         </el-input>
       </div>
-      <div class="chat-session-list">
+      <div v-if="!searchKey" class="chat-session-list">
         <template v-for="item in chatSessionList" :key="item.contactId">
           <ChatSession
             :data="item"
@@ -20,6 +20,14 @@
             @click="chatSessionClickHandle(item)"
           ></ChatSession>
         </template>
+      </div>
+      <div v-show="searchKey" class="search-list">
+        <SearchResult
+          v-for="item in searchList"
+          :key="item.contactId"
+          :data="item"
+          @click="searchClickHandle(item)"
+        ></SearchResult>
       </div>
     </template>
     <template #right-content>
@@ -93,7 +101,7 @@
   <WinOp></WinOp>
 </template>
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import Layout from '../../components/Layout.vue'
 import ChatSession from './ChatSession.vue'
 import ContextMenu from '@imengyu/vue3-context-menu'
@@ -108,12 +116,39 @@ import { useAvatarUpdateStore } from '../../store/AvatarUpdateStore'
 import ChatGroupDetail from '../contact/ChatGroupDetail.vue'
 import ChatMessageSys from './ChatMessageSys.vue'
 import { useMessageCountStore } from '../../store/MessageCountStore'
+import { useRoute } from 'vue-router'
+import SearchResult from './SearchResult.vue'
+const route = useRoute()
 const messageCountStore = useMessageCountStore()
 const avatarUpdateStore = useAvatarUpdateStore()
 const { proxy } = getCurrentInstance()
 const searchKey = ref('')
+let searchList = ref([])
+//搜索功能
 const search = () => {
-  console.log(searchKey.value)
+  if (!searchKey.value) {
+    return
+  }
+  searchList.value = []
+  const regx = new RegExp('(' + searchKey.value + ')', 'gi')
+  chatSessionList.value.forEach((item) => {
+    if (item.contactName.includes(searchKey.value) || item.lastMessage.includes(searchKey.value)) {
+      let newData = Object.assign({}, item)
+      newData.searchContactName = newData.contactName.replace(
+        regx,
+        '<span class="highlight">$1</span>'
+      )
+      newData.searchLastMessage = item.lastMessage.replace(
+        regx,
+        '<span class="highlight">$1</span>'
+      )
+      searchList.value.push(newData)
+    }
+  })
+}
+const searchClickHandle = (data) => {
+  chatSessionClickHandle(data)
+  searchKey.value = ''
 }
 //向主进程发送拿取聊天记录的信息(调用)
 const loadChatSession = () => {
@@ -397,6 +432,34 @@ const onLoadContactApply = () => {
     messageCountStore.setCount('contactApplyCount', contactNoRead, true)
   })
 }
+
+const sendMessage = (chatId) => {
+  let curSession = chatSessionList.value.find((item) => item.contactId == chatId)
+  if (!curSession) {
+    window.ipcRenderer.send('reloadChatSession', { contactId: chatId })
+  } else {
+    chatSessionClickHandle(curSession)
+  }
+}
+
+const onReloadChatSession = () => {
+  window.ipcRenderer.on('reloadChatSessionCallback', (e, { contactId, chatSessionList }) => {
+    sortChatSessionList(chatSessionList)
+    sendMessage(contactId)
+  })
+}
+
+//监听点击别人头像后跳过来的聊天
+watch(
+  () => route.query.timestamp,
+  (newVal) => {
+    if (newVal && route.query.chatId) {
+      sendMessage(route.query.chatId)
+    }
+  },
+  { immediate: true, deep: true }
+)
+
 onMounted(() => {
   onLoadContactApply()
   onReceiveMessage()
@@ -405,6 +468,7 @@ onMounted(() => {
   onLoadChatMessage()
   onAddLocalMessageCallback()
   loadContactApply()
+  onReloadChatSession()
   nextTick(() => {
     const messagePanel = document.querySelector('#message-panel')
     messagePanel.addEventListener('scroll', (e) => {
@@ -425,6 +489,7 @@ onUnmounted(() => {
   window.ipcRenderer.removeAllListeners('loadChatMessageCallback')
   window.ipcRenderer.removeAllListeners('addLocalMessageCallback')
   window.ipcRenderer.removeAllListeners('loadContactApplyCallback')
+  window.ipcRenderer.removeAllListeners('reloadChatSessionCallback')
 })
 </script>
 

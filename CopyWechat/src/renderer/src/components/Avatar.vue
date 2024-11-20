@@ -33,11 +33,12 @@
             <el-button v-if="userInfo.contactStatus == 1" type="primary" @click="sendMessage"
               >发送消息</el-button
             >
-            <el-button v-else type="primary" @click="sendMessage">添加好友</el-button>
+            <el-button v-else type="primary" @click="addContact">添加好友</el-button>
           </div>
         </div>
       </template>
     </el-popover>
+    <SearchAdd ref="searchRef"></SearchAdd>
   </div>
 </template>
 
@@ -46,6 +47,8 @@ import { ref, getCurrentInstance } from 'vue'
 import AvatarBase from './AvatarBase.vue'
 import UserBaseInfo from './UserBaseInfo.vue'
 import { useUserInfoStore } from '@/store/userInfoStore.js'
+import router from '../router'
+import SearchAdd from '../views/contact/SearchAdd.vue'
 const userInfoStore = useUserInfoStore()
 const { proxy } = getCurrentInstance()
 const props = defineProps({
@@ -89,7 +92,30 @@ const getContactInfo = async () => {
   }
 }
 //发送消息
-const sendMessage = () => {}
+const emit = defineEmits(['closeDrawer'])
+const popoverRef = ref()
+
+//点击头像后进入发送消息
+const sendMessage = () => {
+  popoverRef.value.hide()
+  emit('closeDrawer')
+  router.push({
+    path: '/chat',
+    query: {
+      chatId: props.userId,
+      timestamp: new Date().getTime()
+    }
+  })
+}
+//点击头像后添加好友
+const searchRef = ref()
+const addContact = () => {
+  popoverRef.value.hide()
+  searchRef.value.show({
+    contactId: props.userId,
+    contactType: 'USER'
+  })
+}
 </script>
 
 <style lang="scss" scoped>

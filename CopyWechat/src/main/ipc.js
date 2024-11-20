@@ -1,11 +1,17 @@
-import { BrowserWindow, ipcMain } from 'electron'
+import { BrowserWindow, ipcMain, shell } from 'electron'
 import store from './store'
 import { closeWs, initWs } from './wsClient'
-import { addUserSetting, selectSettingInfo, updateContactNoReadCount } from './db/UserSettingModel'
+import {
+  addUserSetting,
+  loadlocalUser,
+  selectSettingInfo,
+  updateContactNoReadCount
+} from './db/UserSettingModel'
 import {
   readAll,
   selectUserSessionList,
-  updateSessionInfo4Message
+  updateSessionInfo4Message,
+  updateStatus
 } from './db/ChatSessionUserModel'
 import { delChatSession } from './db/ChatSessionUserModel'
 import { topChatSession } from './db/ChatSessionUserModel'
@@ -14,6 +20,7 @@ import {
   changeLocalFolder,
   closeLocalServer,
   createCover,
+  downloadUpdate,
   openLocalFolder,
   saveAs,
   saveClipboardFile,
@@ -252,6 +259,36 @@ const onChangeLocalFolder = () => {
     changeLocalFolder()
   })
 }
+
+//改变会话状态，使其在会话列表里显示或隐藏
+const OnReloadChatSession = () => {
+  ipcMain.on('reloadChatSession', async (e, { contactId }) => {
+    // console.log('contactId:', contactId)
+    await updateStatus(contactId)
+    const chatSessionList = await selectUserSessionList()
+    e.sender.send('reloadChatSessionCallback', { contactId, chatSessionList })
+  })
+}
+
+//在其他链接上更新
+const onOpenUrl = () => {
+  ipcMain.on('openUrl', (e, url) => {
+    shell.openExternal(url)
+  })
+}
+//在本地服务器更新
+const onDownloadUpdate = () => {
+  ipcMain.on('downloadUpdate', (e, { id, fileName }) => {
+    downloadUpdate(id, fileName)
+  })
+}
+//记录已经登陆过的用户
+const onLoadlocalUser = () => {
+  ipcMain.on('loadlocalUser', async (e) => {
+    let userList = await loadlocalUser()
+    e.sender.send('loadlocalUserCallback', userList)
+  })
+}
 export {
   onLoginorRegister,
   onOpenChat,
@@ -273,5 +310,9 @@ export {
   onReLogin,
   OnOpenLocalFolder,
   onGetSysSetting,
-  onChangeLocalFolder
+  onChangeLocalFolder,
+  OnReloadChatSession,
+  onOpenUrl,
+  onDownloadUpdate,
+  onLoadlocalUser
 }

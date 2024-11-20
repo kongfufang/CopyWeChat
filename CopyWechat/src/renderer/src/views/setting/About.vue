@@ -9,14 +9,18 @@
       </el-form-item>
     </el-form>
   </ContentPanel>
+  <Update ref="updateRef" :auto-update="false"></Update>
 </template>
 
 <script setup>
 import ContentPanel from '../../components/ContentPanel.vue'
 import config from '../../../../../package.json'
+import Update from '../Update.vue'
+import { ref } from 'vue'
 
+const updateRef = ref()
 const checkUpdate = () => {
-  console.log('checkUpdate')
+  updateRef.value.checkUpdate()
 }
 </script>
 

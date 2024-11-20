@@ -82,7 +82,7 @@ const show = async (groupId) => {
 }
 
 const drawerRef = ref(null)
-const closeDrawer = () => {
+const closeDrawerHandle = () => {
   drawerRef.value.close()
 }
 //添加/移除成员函数

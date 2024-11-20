@@ -9,17 +9,27 @@
       <el-form ref="formDataRef" :model="formData" label-width="0px" @submit.prevent>
         <!--input输入-->
         <el-form-item prop="email">
-          <el-input
-            v-model.trim="formData.email"
-            clearable
-            placeholder="请输入邮箱地址"
-            max-length="30"
-            @focus="clearInput"
-          >
-            <template #prefix>
-              <span class="iconfont icon-email"></span>
-            </template>
-          </el-input>
+          <div class="email-panel">
+            <el-input
+              v-model.trim="formData.email"
+              clearable
+              placeholder="请输入邮箱地址"
+              max-length="30"
+              @focus="clearInput"
+            >
+              <template #prefix>
+                <span class="iconfont icon-email"></span>
+              </template>
+            </el-input>
+            <el-dropdown v-if="IsLogin && localUserList.length > 0" trigger="click">
+              <span class="iconfont icon-down"></span>
+              <template #dropdown>
+                <el-dropdown-item v-for="item in localUserList" :key="item">
+                  <div class="email-select" @click="seleceEmail(item.email)">{{ item.email }}</div>
+                </el-dropdown-item>
+              </template>
+            </el-dropdown>
+          </div>
         </el-form-item>
         <el-form-item v-if="!IsLogin" prop="nickName">
           <el-input
@@ -96,7 +106,7 @@
 </template>
 
 <script setup>
-import { ref, getCurrentInstance, nextTick, onMounted } from 'vue'
+import { ref, getCurrentInstance, nextTick, onMounted, onUnmounted } from 'vue'
 import md5 from 'js-md5'
 import { useUserInfoStore } from '@/store/userInfoStore.js'
 import { useRouter } from 'vue-router'
@@ -207,15 +217,24 @@ const submit = async () => {
     proxy.message.success('注册成功')
   }
 }
-
+const localUserList = ref([])
 const init = () => {
   window.ipcRenderer.send('setLocalStore', { key: 'proDomain', value: proxy.api.proDomain })
   window.ipcRenderer.send('setLocalStore', { key: 'devDomain', value: proxy.api.devDomain })
   window.ipcRenderer.send('setLocalStore', { key: 'proWsDomain', value: proxy.api.proWsDomain })
   window.ipcRenderer.send('setLocalStore', { key: 'devWsDomain', value: proxy.api.devWsDomain })
+  window.ipcRenderer.send('loadlocalUser')
+  window.ipcRenderer.on('loadlocalUserCallback', (event, user) => {
+    if (user) {
+      localUserList.value = user
+    }
+  })
 }
 onMounted(() => {
   init()
+})
+onUnmounted(() => {
+  window.ipcRenderer.removeAllListeners('loadlocalUserCallback')
 })
 //校验密码是否正确
 const checkValue = (type, value, msg) => {
@@ -233,8 +252,16 @@ const checkValue = (type, value, msg) => {
 const clearInput = () => {
   errorMsg.value = null
 }
+
+const seleceEmail = (email) => {
+  formData.value.email = email
+}
 </script>
 <style lang="scss" scoped>
+.email-select {
+  cursor: pointer;
+  width: 250px;
+}
 .loding-panel {
   height: calc(100vh - 30px); //calc() 函数用于动态计算长度值
   display: flex;
@@ -263,6 +290,11 @@ const clearInput = () => {
   }
   .login-form-item {
     border-radius: 1px solid #ddd;
+  }
+  .email-panel {
+    align-items: center;
+    width: 100%;
+    display: flex;
   }
 }
 .login-btn {

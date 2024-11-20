@@ -20,7 +20,7 @@
       <div class="part-title">个性签名</div>
       <div class="part-content">{{ userInfo.personalSignature || '-' }}</div>
     </div>
-    <div class="sendMessage">
+    <div class="sendMessage" @click="sendMessage">
       <div class="iconfont icon-chat2"></div>
       <div class="test">发消息</div>
     </div>
@@ -32,7 +32,8 @@ import ContentPanel from '../../components/ContentPanel.vue'
 import UserBaseInfo from '../../components/UserBaseInfo.vue'
 import { useContactStateStore } from '../../store/contactStateStore'
 import { ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+const router = useRouter()
 const contactStateStore = useContactStateStore()
 const route = useRoute()
 import { getCurrentInstance } from 'vue'
@@ -91,6 +92,15 @@ const delContact = () => {
 //删除操作，使用过多次，提取出来
 const delContactData = () => {
   contactStateStore.setContactReload('REMOVE_USER')
+}
+const sendMessage = () => {
+  router.push({
+    path: '/chat',
+    query: {
+      chatId: userInfo.value.userId,
+      timestamp: new Date().getTime()
+    }
+  })
 }
 //实时监听路由参数变化，来确定打开谁的聊天框
 watch(

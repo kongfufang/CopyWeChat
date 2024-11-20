@@ -348,7 +348,7 @@ const changeLocalFolder = async () => {
   let result = await dialog.showOpenDialog(options)
   const newFileFolder = result.filePaths[0]
   if (result.canceled || !result.filePaths) return
-  if (localFileFolder != newFileFolder) {
+  if (localFileFolder != newFileFolder + '\\') {
     const userId = store.getUserId()
     getWindow('main').webContents.send('copyingCallback')
     await fse.copy(localFileFolder + '/' + userId, newFileFolder + '/' + userId)
@@ -358,7 +358,33 @@ const changeLocalFolder = async () => {
   const sysSettingJson = JSON.stringify(sysSetting)
   await updateSysSetting(sysSettingJson)
   store.setUserData('localFileFolder', sysSetting.localFileFolder + store.getUserId())
-  getWindow('main').webContents.send('getSysSettingCallback', sysSetting)
+  getWindow('main').webContents.send('getSysSettingCallback', sysSettingJson)
+}
+
+//下载更新
+const downloadUpdate = async (id, fileName) => {
+  let url = `${store.getStore('domin')}/api/update/download`
+  const token = store.getUserData('token')
+  const config = {
+    responseType: 'stream',
+    headers: {
+      'content-type': 'multipart/form-data',
+      token
+    },
+    onDownloadProgress(progress) {
+      const loaded = progress.loaded
+      getWindow('main').webContents.send('upateDownloadCallback', { loaded })
+    }
+  }
+  const response = await axios.post(url, { id }, config)
+  const localFile = await getLocalFilePath(null, false, fileName)
+  const stream = fs.createWriteStream(localFile)
+  response.data.pipe(stream)
+  stream.on('finish', async () => {
+    stream.close()
+    const command = `${localFile}`
+    await execCommand(command)
+  })
 }
 export {
   saveMessage2Local,
@@ -368,5 +394,6 @@ export {
   saveAs,
   saveClipboardFile,
   openLocalFolder,
-  changeLocalFolder
+  changeLocalFolder,
+  downloadUpdate
 }

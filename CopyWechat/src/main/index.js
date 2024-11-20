@@ -23,7 +23,11 @@ import {
   onReLogin,
   OnOpenLocalFolder,
   onGetSysSetting,
-  onChangeLocalFolder
+  onChangeLocalFolder,
+  OnReloadChatSession,
+  onOpenUrl,
+  onDownloadUpdate,
+  onLoadlocalUser
 } from './ipc'
 import { saveWindow } from './WindowProxy'
 
@@ -184,7 +188,7 @@ function createWindow() {
   //重新上号
   onReLogin(() => {
     mainWindow.setResizable(true)
-    mainWindow.setMaximumSize(login_width, login_height)
+    mainWindow.setMinimumSize(login_width, login_height)
     mainWindow.setSize(login_width, login_height)
     mainWindow.center()
     mainWindow.setResizable(false)
@@ -195,6 +199,12 @@ function createWindow() {
   onGetSysSetting()
   //修改文件路径
   onChangeLocalFolder()
+  //改变会话状态，使其在会话列表里显示或隐藏
+  OnReloadChatSession()
+  //打开其他链接更新
+  onOpenUrl()
+  onDownloadUpdate()
+  onLoadlocalUser()
 }
 
 // This method will be called when Electron has finished

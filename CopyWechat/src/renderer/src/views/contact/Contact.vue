@@ -11,7 +11,7 @@
           </template>
         </el-input>
       </div>
-      <div class="contact-list">
+      <div v-if="!searchKey" class="contact-list">
         <template v-for="item in partList" :key="item.partName">
           <div class="part-title">{{ item.partName }}</div>
           <div class="part-list">
@@ -45,6 +45,14 @@
           </div>
         </template>
       </div>
+      <div v-else>
+        <contactSearchResult
+          v-for="item in searchList"
+          :key="item.contactId || item.groupId"
+          :data="item"
+          @click="searchClickHandle(item)"
+        ></contactSearchResult>
+      </div>
     </template>
     <template #right-content>
       <div class="title-panel drag">{{ rightTitle }}</div>
@@ -56,6 +64,7 @@
 </template>
 
 <script setup>
+import contactSearchResult from './contactSearchResult.vue'
 import Layout from '../../components/Layout.vue'
 import { ref, getCurrentInstance, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -184,8 +193,50 @@ const contactDetail = (contact, part) => {
 }
 //主页面所有联系人搜索
 const searchKey = ref('')
-const search = () => {}
+const searchList = ref([])
+const search = () => {
+  if (!searchKey.value) {
+    return
+  }
+  searchList.value = []
+  const regx = new RegExp('(' + searchKey.value + ')', 'gi')
+  let allContactList = ref([])
+  partList.value.forEach((item) => {
+    if (item.contactData) {
+      allContactList.value = allContactList.value.concat(item.contactData)
+    }
+  })
+  allContactList.value.forEach((item) => {
+    let contactName = item.groupId ? item.groupName : item.contactName
+    if (contactName.includes(searchKey.value)) {
+      let newData = Object.assign({}, item)
+      console.log('newData', newData.groupId)
+      if (newData.groupId) {
+        newData.searchContactName = newData.groupName.replace(
+          regx,
+          '<span class="highlight">$1</span>'
+        )
+      } else {
+        newData.searchContactName = newData.contactName.replace(
+          regx,
+          '<span class="highlight">$1</span>'
+        )
+      }
+      searchList.value.push(newData)
+    }
+  })
+}
 
+const searchClickHandle = (data) => {
+  searchKey.value = ''
+  router.push({
+    path: '/chat',
+    query: {
+      chatId: data.groupId || data.contactId,
+      timestamp: new Date().getTime()
+    }
+  })
+}
 //实时监听是否有新的好友或群组加入
 watch(
   () => contactStateStore.contactReload,

@@ -27,6 +27,7 @@ const api = {
   updatePassword: '/userInfo/updatePassword', // 修改密码
   logout: '/userInfo/logout', // 退出登录
   sendMessage: '/chat/sendMessage', // 发送消息
-  getSysSetting: '/account/getSysSetting' // 获取系统设置
+  getSysSetting: '/account/getSysSetting', // 获取系统设置
+  checkVersion: '/update/checkVersion' // 检查版本
 }
 export default api

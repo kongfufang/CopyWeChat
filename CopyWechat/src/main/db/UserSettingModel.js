@@ -1,6 +1,6 @@
 import { startLocalServer } from '../file'
 import store from '../store'
-import { insertOrIgnore, queryOne, run, update } from './ADB'
+import { insertOrIgnore, queryAll, queryOne, run, update } from './ADB'
 const os = require('os')
 const useDir = os.homedir()
 //更新申请好友未读数量
@@ -73,4 +73,15 @@ const updateSysSetting = (sysSetting) => {
   }
   return update('user_setting', data, paramData)
 }
-export { updateContactNoReadCount, addUserSetting, selectSettingInfo, updateSysSetting }
+
+const loadlocalUser = () => {
+  let sql = 'select email from user_setting where email is not null'
+  return queryAll(sql, [])
+}
+export {
+  updateContactNoReadCount,
+  addUserSetting,
+  selectSettingInfo,
+  updateSysSetting,
+  loadlocalUser
+}

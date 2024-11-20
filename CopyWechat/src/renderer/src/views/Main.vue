@@ -42,23 +42,26 @@
       </router-view>
     </div>
   </div>
+  <Update></Update>
 </template>
 
 <script setup>
 //基础数据
-import { onMounted, ref, getCurrentInstance } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, getCurrentInstance, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserInfoStore } from '../store/userInfoStore'
 import { useGlobalInfoStore } from '../store/GlobalInfoStore'
 import Avatar from '../components/Avatar.vue'
 import { useSysSettingStore } from '../store/SysSettingStore'
 import { useMessageCountStore } from '../store/MessageCountStore'
+import Update from './Update.vue'
 const messageCountStore = useMessageCountStore()
 const sysSettingStore = useSysSettingStore()
 const { proxy } = getCurrentInstance()
 const globalInfoStore = useGlobalInfoStore()
 const userInfoStore = useUserInfoStore()
 const router = useRouter()
+const route = useRoute()
 const menuList = ref([
   {
     name: 'chat',
@@ -103,6 +106,21 @@ const getSysSetting = async () => {
   // console.log('result', result)
   sysSettingStore.setSetting(result)
 }
+
+const menuSelect = (path) => {
+  currentType.value = menuList.value.find((item) => path.includes(item.path))
+}
+
+watch(
+  () => route.path,
+  (newVale) => {
+    if (newVale) {
+      console.log('newVale', newVale)
+
+      menuSelect(newVale)
+    }
+  }
+)
 onMounted(() => {
   getSysSetting()
   getLoginInfo()

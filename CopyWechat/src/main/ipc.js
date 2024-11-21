@@ -141,9 +141,12 @@ const onOpenNewWindow = () => {
 }
 
 const openWindow = ({ windowId, title, path, width, height, data }) => {
+  console.log('width:', width)
+
   title = title || 'CopyWeChat'
-  width = width || '960'
-  height = height || '970'
+  width = width || 960
+  console.log('width:', width)
+  height = height || 970
   let localServerPort = store.getUserData('localServerPort')
   data.localServerPort = localServerPort
   let newWindow = getWindow(windowId)
@@ -190,6 +193,7 @@ const openWindow = ({ windowId, title, path, width, height, data }) => {
       delWindow(windowId)
     })
   } else {
+    newWindow.setWidth(width)
     newWindow.show()
     newWindow.setSkipTaskbar(false)
     newWindow.webContents.send('pageInitData', data)
@@ -314,5 +318,6 @@ export {
   OnReloadChatSession,
   onOpenUrl,
   onDownloadUpdate,
-  onLoadlocalUser
+  onLoadlocalUser,
+  openWindow
 }

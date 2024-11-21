@@ -28,6 +28,12 @@ const api = {
   logout: '/userInfo/logout', // 退出登录
   sendMessage: '/chat/sendMessage', // 发送消息
   getSysSetting: '/account/getSysSetting', // 获取系统设置
-  checkVersion: '/update/checkVersion' // 检查版本
+  checkVersion: '/update/checkVersion', // 检查版本
+  loadAdminAccount: '/admin/loadUser', // 加载管理员账号
+  updateUserStatus: '/admin/updateUserStatus', // 更新用户状态
+  forceOffLine: '/admin/forceOffLine', // 强制下线
+  loadBeautyAccount: '/admin/loadBeautyAccountList', // 加载美容账号
+  saveBeautAccount: '/admin/saveBeautAccount', // 保存美容账号
+  loadGroup: '/admin/loadGroup' // 加载群组
 }
 export default api

@@ -27,7 +27,8 @@ import {
   OnReloadChatSession,
   onOpenUrl,
   onDownloadUpdate,
-  onLoadlocalUser
+  onLoadlocalUser,
+  openWindow
 } from './ipc'
 import { saveWindow } from './WindowProxy'
 
@@ -112,12 +113,29 @@ function createWindow() {
   })
   //打开聊天窗口
   onOpenChat((config) => {
+    // console.log('config', config)
     mainWindow.setResizable(true)
-    mainWindow.setSize(850, 800)
+    mainWindow.setSize(750, 700)
+    mainWindow.setMinimumSize(800, 600)
     mainWindow.center()
     mainWindow.setMaximizable(true)
-    mainWindow.setMinimumSize(800, 600)
-
+    if (config.admin) {
+      contextMenu.unshift({
+        label: '后台管理',
+        click: () => {
+          openWindow({
+            windowId: 'admin',
+            title: '后台管理',
+            path: '/admin',
+            width: config.widowWidth,
+            height: config.widowHeight,
+            data: {
+              token: config.token
+            }
+          })
+        }
+      })
+    }
     //设置托盘
     contextMenu.unshift({
       label: '用户：' + config.nickName,

@@ -16,6 +16,7 @@
 <script setup>
 import ShowLocalImage from './ShowLocalImage.vue'
 import { useAvatarUpdateStore } from '../store/AvatarUpdateStore'
+import { onMounted } from 'vue'
 const avatarUpdateStore = useAvatarUpdateStore()
 const props = defineProps({
   width: {
@@ -56,6 +57,9 @@ const showDetailHander = () => {
     }
   })
 }
+onMounted(() => {
+  console.log('userId', props.userId)
+})
 </script>
 
 <style lang="scss" scoped>

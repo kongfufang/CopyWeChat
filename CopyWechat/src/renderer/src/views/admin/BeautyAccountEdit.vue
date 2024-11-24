@@ -6,7 +6,7 @@
     width="400px"
     @close="dialogConfig.show = false"
   >
-    <el-form ref="formDataRef" :model="formData" label-width="60px" @rules="rules">
+    <el-form ref="formDataRef" :model="formData" label-width="60px" :rules="rules">
       <!--input输入-->
       <el-form-item prop="email" label="邮箱">
         <el-input

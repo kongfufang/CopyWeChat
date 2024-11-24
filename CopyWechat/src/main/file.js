@@ -126,38 +126,41 @@ const uploadFile = (messageId, filePath, coverPath) => {
   })
 }
 //保存消息进入本地(执行)
-const saveMessage2Local = (messageId, filePath, fileType) => {
-  new Promise((resolve) => {
-    const startFunction = async () => {
-      let savePath = path.resolve(await getLocalFilePath('chat', false, messageId))
-      //源文件到目标文件
-      // console.log('savePath:', savePath)
+const saveMessage2Local = async (messageId, filePath, fileType) => {
+  let savePath = path.resolve(await getLocalFilePath('chat', false, messageId))
 
-      fs.copyFileSync(filePath, savePath)
-      let coverPath = null
-      if (fileType != 2) {
-        let command = `"${getFFprobePath()}" -v error -select_streams v:0 -show_entries stream=codec_name "${path.resolve(filePath)}"` //获取视频编码格式
-        let ffmpegPath = path.resolve(getFFmpegPath())
-        let result = await execCommand(command)
-        result = result.replaceAll('\r\n', '')
-        result = result.substring(result.lastIndexOf('=') + 1)
-        let code = result.substring(0, result.lastIndexOf('['))
-        // console.log('code:', code)
-        if (code === 'hevc') {
-          command = `"${ffmpegPath}" -y -i "${path.resolve(filePath)}" -c:v libx264 -crf 20 "${savePath}"` //将hevc格式转换为h264格式
-          await execCommand(command)
-        }
-        coverPath = savePath + cover_image_suffix
-        // console.log('coverPath:', coverPath)
-        command = `"${ffmpegPath}" -i "${savePath}" -y -vframes 1 -vf "scale='min(170,iw*min(170/iw,170/ih))':'min(170,ih*min(170/iw,170/ih))'" "${coverPath}"`
-        await execCommand(command)
-      }
-      await uploadFile(messageId, savePath, coverPath)
-      resolve()
+  // 源文件到目标文件
+  fs.copyFileSync(filePath, savePath)
+
+  let coverPath = null
+  if (fileType !== 2) {
+    // 获取视频编码格式
+    let command = `"${getFFprobePath()}" -v error -select_streams v:0 -show_entries stream=codec_name "${path.resolve(filePath)}"`
+    let ffmpegPath = path.resolve(getFFmpegPath())
+    let result = await execCommand(command)
+    result = result.replaceAll('\r\n', '')
+    result = result.substring(result.lastIndexOf('=') + 1)
+    let code = result.substring(0, result.lastIndexOf('['))
+
+    if (code === 'hevc') {
+      // 转换为 h264 格式
+      command = `"${ffmpegPath}" -y -i "${path.resolve(filePath)}" -c:v libx264 -crf 20 "${savePath}"`
+      await execCommand(command)
     }
-    startFunction()
-  })
+
+    // 生成封面图像路径
+    const parsedPath = path.parse(savePath)
+    coverPath = path.join(parsedPath.dir, `${parsedPath.name}${cover_image_suffix}`)
+
+    // 生成封面图像
+    command = `"${ffmpegPath}" -i "${savePath}" -y -vframes 1 -vf "scale='min(170,iw*min(170/iw,170/ih))':'min(170,ih*min(170/iw,170/ih))'" "${coverPath}"`
+    await execCommand(command)
+  }
+
+  // 上传文件及封面
+  await uploadFile(messageId, savePath, coverPath)
 }
+
 let server = null
 //启动本地服务(调用)
 const startLocalServer = (serverPort) => {
@@ -239,14 +242,14 @@ const downFile = (fileId, showCover, savePath, partType) => {
       const config = {
         responseType: 'stream',
         headers: {
-          'content-type': 'multipart/form-data',
+          'Content-type': 'multipart/form-data',
           token
         }
       }
       let response = await axios.post(url, { fileId, showCover }, config)
       const folder = savePath.substring(0, savePath.lastIndexOf('/'))
       // console.log('folder:', folder)
-      await mkdirs(folder)
+      mkdirs(folder)
       let writeStream = fs.createWriteStream(savePath)
       // console.log(savePath)
       if (response.headers['content-type'] === 'application/json') {

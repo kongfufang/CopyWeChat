@@ -193,7 +193,6 @@ const openWindow = ({ windowId, title, path, width, height, data }) => {
       delWindow(windowId)
     })
   } else {
-    newWindow.setWidth(width)
     newWindow.show()
     newWindow.setSkipTaskbar(false)
     newWindow.webContents.send('pageInitData', data)

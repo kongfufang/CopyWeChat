@@ -100,6 +100,12 @@
   ></ChatGroupDetail>
   <WinOp></WinOp>
 </template>
+<script>
+export default {
+  name: 'Chat'
+}
+</script>
+
 <script setup>
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import Layout from '../../components/Layout.vue'
@@ -185,6 +191,7 @@ const onReceiveMessage = () => {
         },
         showCancelButton: false
       })
+      return
     }
     if (message.messageType == 10) {
       let curSession = chatSessionList.value.find((item) => item.contactId == message.contactId)
@@ -320,6 +327,7 @@ const chatSessionClickHandle = (item) => {
 //删除函数，与主进程进行交互
 const delChatSession = (contactId) => {
   delChatSessionList(contactId)
+  setSessionSelect({})
   currentChatSession.value = {}
   window.ipcRenderer.send('delChatSession', contactId)
 }

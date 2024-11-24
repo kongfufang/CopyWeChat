@@ -40,6 +40,7 @@ const createWs = () => {
     // console.log('ws客户端收到消息:', e.data)
     const message = JSON.parse(e.data)
     const messageType = message.messageType
+    const leaveGroupUserId = message.extendData
     console.log('messageType:', messageType)
     switch (messageType) {
       case 0: {
@@ -63,7 +64,7 @@ const createWs = () => {
       case 6: {
         //文件上传成功后通知渲染进程修改状态读取
         updateMessage({ status: 1 }, { messageId: message.messageId })
-        sender.send('receiveMessage', { message })
+        sender.send('receiveMessage', message)
         break
       }
       case 10: {
@@ -111,6 +112,9 @@ const createWs = () => {
         //更新数据库
         const dbSessionInfo = await selectUserSessionByContactId(message.contactId)
         message.extendData = dbSessionInfo
+        if (messageType == 11 && leaveGroupUserId == store.getUserId()) {
+          break
+        }
         // console.log('接收到消息:', message)
         sender.send('receiveMessage', message)
         break

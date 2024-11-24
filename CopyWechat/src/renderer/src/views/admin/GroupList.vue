@@ -74,6 +74,8 @@
 <script setup>
 import { ref, getCurrentInstance } from 'vue'
 const { proxy } = getCurrentInstance()
+import Table from '../../components/Table.vue'
+import AvatarBase from '../../components/AvatarBase.vue'
 const tableData = ref({})
 const tableOptions = {}
 const columns = [
@@ -138,6 +140,22 @@ const loadDataList = async () => {
     return
   }
   Object.assign(tableData.value, result)
+}
+const dissolutionGroup = (data) => {
+  proxy.confirm({
+    message: `确定要解散【${data.groupName}】 吗？`,
+    okfun: async () => {
+      let result = await proxy.Request({
+        url: proxy.api.adminDissolutionGroup,
+        params: { groupId: data.groupId }
+      })
+      if (!result) {
+        return
+      }
+      proxy.message.success('解散成功')
+      loadDataList()
+    }
+  })
 }
 </script>
 

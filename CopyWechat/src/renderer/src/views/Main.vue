@@ -36,7 +36,7 @@
       <!-- { Component } 是解构赋值，表示 router-view 提供的 Component 对象。这个对象是当前匹配路由的组件。 -->
       <router-view v-slot="{ Component }">
         <!-- keep-alive 是 Vue 提供的一个内置组件，可以使被包含的组件保留状态，或避免重新渲染。 -->
-        <keep-alive include="chat">
+        <keep-alive include="Chat">
           <component :is="Component" ref="componentRef" />
         </keep-alive>
       </router-view>
@@ -64,7 +64,7 @@ const router = useRouter()
 const route = useRoute()
 const menuList = ref([
   {
-    name: 'chat',
+    name: 'Chat',
     icon: 'icon-chat',
     path: '/chat',
     countKey: 'chatCount',

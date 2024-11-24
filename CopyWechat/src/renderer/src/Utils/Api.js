@@ -34,6 +34,12 @@ const api = {
   forceOffLine: '/admin/forceOffLine', // 强制下线
   loadBeautyAccount: '/admin/loadBeautyAccountList', // 加载美容账号
   saveBeautAccount: '/admin/saveBeautAccount', // 保存美容账号
-  loadGroup: '/admin/loadGroup' // 加载群组
+  loadGroup: '/admin/loadGroup', // 加载群组
+  adminDissolutionGroup: '/admin/dissolutionGroup', // 管理员解散群组
+  getSysSetting4Admin: '/admin/getSysSetting', // 获取系统设置
+  loadUpdateDataList: '/admin/loadUpdateList', // 加载更新数据列表
+  saveUpdate: '/admin/saveUpdate', // 保存更新数据
+  postUpdate: '/admin/postUpdate', // 发布更新
+  delUpdate: '/admin/delUpdate' // 删除更新
 }
 export default api
